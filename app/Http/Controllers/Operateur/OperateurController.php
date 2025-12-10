@@ -37,11 +37,21 @@ class OperateurController extends Controller
             : 0;
 
         // Souscriptions récentes de l'opérateur
-        $souscriptions = Souscription::with(['client'])
-            ->where('operateur_id', $user->id)
+        $souscriptions = Souscription::where('operateur_id', $user->id)
+            ->with(['client'])
             ->latest()
             ->take(10)
             ->get();
+
+        // Charger les noms des projets pour chaque souscription
+        foreach ($souscriptions as $souscription) {
+            if ($souscription->programme) {
+                $projet = Projet::find($souscription->programme);
+                $souscription->nom_programme = $projet ? $projet->nom : 'Projet non défini';
+            } else {
+                $souscription->nom_programme = 'Projet non défini';
+            }
+        }
 
         // Statistiques mensuelles pour l'opérateur
         $currentMonth = Carbon::now()->month;
@@ -129,22 +139,33 @@ class OperateurController extends Controller
             'Client diaspora' => 'diaspora'
         ];
 
-        // Créer le client
-        $client = new Client();
-        $client->nom_prenom = $request->fullName;
-        $client->email = $request->email;
-        $client->date_naissance = $request->birthDate;
-        $client->lieu_naissance = $request->birthPlace;
-        $client->nationalite = $request->nationality;
-        $client->nombre_enfants = $request->children;
-        $client->ayant_droit = $request->heirs;
-        $client->salaire_mensuel = $request->salary;
-        $client->situation_matrimoniale = $situationMatrimonialeMap[$request->maritalStatus] ?? 'celibataire';
-        $client->nature_piece = $naturePieceMap[$request->idType] ?? 'cni';
-        $client->numero_piece = $request->idNumber;
-        $client->categorie_client = $categorieClientMap[$request->clientCategory] ?? 'individuel';
-        $client->mutuelle_id = null;
-        $client->save();
+        // Vérifier si le client existe déjà par email
+        $client = Client::where('email', $request->email)->first();
+        
+        if (!$client) {
+            // Créer un nouveau client
+            $client = new Client();
+            $client->nom_prenom = $request->fullName;
+            $client->email = $request->email;
+            $client->date_naissance = $request->birthDate;
+            $client->lieu_naissance = $request->birthPlace;
+            $client->nationalite = $request->nationality;
+            $client->nombre_enfants = $request->children;
+            $client->ayant_droit = $request->heirs;
+            $client->salaire_mensuel = $request->salary;
+            $client->situation_matrimoniale = $situationMatrimonialeMap[$request->maritalStatus] ?? 'celibataire';
+            $client->nature_piece = $naturePieceMap[$request->idType] ?? 'cni';
+            $client->numero_piece = $request->idNumber;
+            $client->categorie_client = $categorieClientMap[$request->clientCategory] ?? 'individuel';
+            $client->mutuelle_id = null;
+            
+            // Générer la référence client
+            $lastClient = Client::orderBy('id', 'desc')->first();
+            $nextNumber = $lastClient ? $lastClient->id + 1 : 1;
+            $client->ref_client = 'CLI-' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+            
+            $client->save();
+        }
 
         // Gérer le fichier d'identification s'il est présent
         if ($request->hasFile('idFile')) {
@@ -183,6 +204,12 @@ class OperateurController extends Controller
         $souscription->apport_initial = $request->apport_initial;
         $souscription->frais_souscription = $request->frais_souscription;
         $souscription->statut = 'en_attente';
+        
+        // Générer la référence souscription
+        $lastSouscription = Souscription::orderBy('id', 'desc')->first();
+        $nextNumber = $lastSouscription ? $lastSouscription->id + 1 : 1;
+        $souscription->ref_souscription = 'SOUS-' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+        
         $souscription->save();
 
         return redirect()->route('operateur.dashboard')

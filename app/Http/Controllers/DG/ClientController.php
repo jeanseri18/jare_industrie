@@ -62,6 +62,26 @@ class ClientController extends Controller
             ->with('success', 'Client créé avec succès');
     }
 
+    public function show(Client $client)
+    {
+        $client->load(['souscriptions' => function($query) {
+            $query->with('projet')->latest();
+        }, 'mutuelle']);
+        
+        foreach ($client->souscriptions as $souscription) {
+            if ($souscription->programme && is_numeric($souscription->programme) && !$souscription->projet) {
+                $projet = \App\Models\Projet::find($souscription->programme);
+                $souscription->nom_programme = $projet ? $projet->nom : $souscription->programme;
+            } elseif ($souscription->projet) {
+                $souscription->nom_programme = $souscription->projet->nom;
+            } else {
+                $souscription->nom_programme = $souscription->programme;
+            }
+        }
+        
+        return view('dg.clients.show', compact('client'));
+    }
+
     public function edit(Client $client)
     {
         $mutuelles = Mutuelle::where('est_active', true)->get();

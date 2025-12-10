@@ -587,29 +587,30 @@
                             </div>
                         </div>
                         <div class="footer-section">
-                            <h4>Navigation</h4>
+                            <h4>Liens utiles</h4>
                             <ul class="footer-links">
-                                <li><a href="{{ url('/') }}">Accueil</a></li>
-                                <li><a href="#services">Services</a></li>
-                                <li><a href="#about">À propos</a></li>
+                                <li><a href="{{ url('/') }}">À propos</a></li>
+                                <li><a href="#services">Espace client</a></li>
+                                <li><a href="#about">Comptabilité</a></li>
+                                <li><a href="#about">Administration</a></li>
                                 <li><a href="#contact">Contact</a></li>
                             </ul>
                         </div>
                         <div class="footer-section">
-                            <h4>Ressources</h4>
+                            <h4>Bloc Ressources</h4>
                             <ul class="footer-links">
-                                <li><a href="#">Documentation</a></li>
-                                <li><a href="#">Guide utilisateur</a></li>
-                                <li><a href="#">FAQ</a></li>
-                                <li><a href="#">Support</a></li>
+                                <li><a href="#">Politique de confidentialité</a></li>
+                                <li><a href="#">Sécurité & authentification</a></li>
+                                <li><a href="#">Mentions légales</a></li>
+                                <li><a href="#">Aide & support</a></li>
                             </ul>
                         </div>
                         <div class="footer-section">
                             <h4>Contact</h4>
                             <ul class="footer-links">
-                                <li><i class="fas fa-envelope" style="margin-right: 8px; color: #3b5998;"></i> contact@immogest.ci</li>
-                                <li><i class="fas fa-phone" style="margin-right: 8px; color: #3b5998;"></i> +225 01 XX XX XX XX</li>
-                                <li><i class="fas fa-map-marker-alt" style="margin-right: 8px; color: #3b5998;"></i> Abidjan, Plateau</li>
+                                <li><i class="fas fa-envelope" style="margin-right: 8px; color: white;"></i> contact@jaresindustries.ci</li>
+                                <li><i class="fas fa-phone" style="margin-right: 8px; color: white;"></i> +225 01 XX XX XX XX</li>
+                                <li><i class="fas fa-map-marker-alt" style="margin-right: 8px; color: white;"></i> Abidjan, Plateau</li>
                             </ul>
                         </div>
                     </div>

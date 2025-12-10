@@ -343,7 +343,7 @@
                     <img src="{{ asset('operateur/souscription 3.png') }}" alt="Souscriptions validées" style="width: 32px; height: 32px;">
                 </div>
                 <div class="stat-content">
-                    <div class="stat-label">Souscriptions validées<br>par le superviseur</div>
+                    <div class="stat-label">Souscriptions validées<br>par la comptabilité</div>
                     <div class="stat-value">{{ $souscriptionsValidees }}</div>
                 </div>
             </div>
@@ -397,7 +397,8 @@
             <table>
                 <thead>
                     <tr>
-                        <th>N° client</th>
+                        <th>Réf. Souscription</th>
+                        <th>Réf. Client</th>
                         <th>Nom du client</th>
                         <th>Projet</th>
                         <th>Type logement</th>
@@ -409,9 +410,10 @@
                 <tbody>
                     @forelse($souscriptions as $souscription)
                         <tr>
-                            <td>{{ $souscription->client->numero_client ?? 'N/A' }}</td>
-                            <td>{{ $souscription->client->nom ?? 'N/A' }} {{ $souscription->client->prenom ?? '' }}</td>
-                            <td>{{ $souscription->programme ?? 'Projet non défini' }}</td>
+                            <td>{{ $souscription->ref_souscription ?? 'N/A' }}</td>
+                            <td>{{ $souscription->client->ref_client ?? 'N/A' }}</td>
+                            <td>{{ $souscription->nom_prenom ?? 'N/A' }}</td>
+                            <td>{{ $souscription->nom_programme ?? 'Projet non défini' }}</td>
                             <td>{{ $souscription->type_logement ?? 'N/A' }}</td>
                             <td>{{ $souscription->created_at->format('d/m/Y') }}</td>
                             <td>

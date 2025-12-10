@@ -52,9 +52,13 @@
                         <td>{{ $client->email }}</td>
                         <td>
                             <div class="btn-group-custom">
+                                <a href="{{ route('dg.clients.show', $client) }}" class="btn btn-info btn-sm" title="Voir les détails">
+                                    <i class="fas fa-eye"></i>
+                                </a>
                                 <a href="{{ route('dg.clients.edit', $client) }}" class="btn btn-warning btn-sm" title="Modifier">
                                     <i class="fas fa-edit"></i>
                                 </a>
+                                
                                 <form action="{{ route('dg.clients.destroy', $client) }}" method="POST" class="d-inline">
                                     @csrf
                                     @method('DELETE')

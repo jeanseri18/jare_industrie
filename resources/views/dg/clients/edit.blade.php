@@ -36,7 +36,7 @@
                     <div class="mb-3">
                         <label for="date_naissance" class="form-label">Date de Naissance *</label>
                         <input type="date" class="form-control @error('date_naissance') is-invalid @enderror" 
-                               id="date_naissance" name="date_naissance" value="{{ old('date_naissance', $client->date_naissance) }}" required>
+                               id="date_naissance" name="date_naissance" value="{{ old('date_naissance', $client->date_naissance ? $client->date_naissance->format('Y-m-d') : '') }}" required>
                         @error('date_naissance')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror

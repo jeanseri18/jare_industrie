@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Souscription extends Model
 {
     protected $fillable = [
+        'ref_souscription',
         'operateur_id',
         'client_id',
         'categorie_client',
@@ -63,6 +64,11 @@ class Souscription extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class, 'client_id');
+    }
+
+    public function projet(): BelongsTo
+    {
+        return $this->belongsTo(Projet::class, 'programme', 'id');
     }
 
 

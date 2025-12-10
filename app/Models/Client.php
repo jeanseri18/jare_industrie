@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Client extends Model
 {
     protected $fillable = [
+        'ref_client',
         'nom_prenom',
         'date_naissance',
         'lieu_naissance',
