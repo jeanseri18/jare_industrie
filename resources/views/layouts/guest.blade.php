@@ -481,39 +481,36 @@
                 <ul class="nav-menu">
                     <li>
                         <a href="{{ url('/') }}" class="nav-link">
-                            <i class="fas fa-home"></i>
                             <span>Accueil</span>
                         </a>
                     </li>
                     <li>
                         <a href="#services" class="nav-link">
-                            <i class="fas fa-briefcase"></i>
-                            <span>Services</span>
+                            <span>Operateur</span>
                         </a>
                     </li>
                     <li>
                         <a href="#about" class="nav-link">
-                            <i class="fas fa-info-circle"></i>
-                            <span>À propos</span>
+                            <span>Commercial</span>
                         </a>
                     </li>
                     <li>
                         <a href="#contact" class="nav-link">
-                            <i class="fas fa-envelope"></i>
-                            <span>Contact</span>
+                            <span>Comptable</span>
+                        </a>
+                    </li>
+                     <li>
+                        <a href="#contact" class="nav-link">
+                            <span>DG</span>
                         </a>
                     </li>
                 </ul>
 
                 <!-- CTA Buttons -->
                 <div class="nav-cta">
-                    <a href="{{ route('client.login') }}" class="btn-ghost">
-                        <i class="fas fa-sign-in-alt"></i>
-                        <span style="position: relative; z-index: 1;">Connexion</span>
-                    </a>
-                    <a href="{{ route('client.register') }}" class="btn-primary">
-                        <i class="fas fa-user-plus"></i>
-                        <span style="position: relative; z-index: 1;">Inscription</span>
+          
+                    <a href="" class="btn-primary">
+                        <span style="position: relative; z-index: 1;">Contact</span>
                     </a>
                 </div>
 
@@ -553,11 +550,11 @@
                             </li>
                     </ul>
                     <div class="mobile-nav-cta">
-                        <a href="{{ route('client.login') }}" class="btn-ghost" style="justify-content: center;">
+                        <a href="{{ route('login') }}" class="btn-ghost" style="justify-content: center;">
                             <i class="fas fa-sign-in-alt"></i>
                             <span>Connexion</span>
                         </a>
-                        <a href="{{ route('client.register') }}" class="btn-primary" style="justify-content: center;">
+                        <a href="{{ route('register') }}" class="btn-primary" style="justify-content: center;">
                             <i class="fas fa-user-plus"></i>
                             <span style="position: relative; z-index: 1;">Inscription</span>
                         </a>
@@ -617,7 +614,7 @@
                         </div>
                     </div>
                     <div class="footer-bottom">
-                        <p>&copy; {{ date('Y') }} ImmoGest. Tous droits réservés.</p>
+                        <p>&copy; {{ date('Y') }} Jare industrie. Tous droits réservés.</p>
                     </div>
                 </div>
             </footer>

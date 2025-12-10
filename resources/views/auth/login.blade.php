@@ -422,7 +422,7 @@
                 <div class="login-logo">
                     <i class="fas fa-building" style="font-size: 2rem; color: #3b5998;"></i>
                 </div>
-                <h2>Bienvenue sur ImmoGest</h2>
+                <h2>Bienvenue sur Jare industrie</h2>
                 <p>Gérez vos projets immobiliers en toute simplicité avec notre plateforme intégrée.</p>
                 
                 <div class="login-features">
@@ -454,7 +454,7 @@
                 <p>Accédez à votre espace personnel</p>
             </div>
 
-            <form method="POST" action="{{ route('client.login') }}">
+            <form method="POST" action="{{ route('login') }}">
                 @csrf
 
                 <div class="form-group">
@@ -531,7 +531,7 @@
                 </div>
 
                 <div class="register-link">
-                    Pas encore de compte? <a href="{{ route('client.register') }}">S'inscrire</a>
+                    Pas encore de compte? <a href="{{ route('register') }}">S'inscrire</a>
                 </div>
             </form>
         </div>

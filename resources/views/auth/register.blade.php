@@ -447,7 +447,7 @@
                     <i class="fas fa-user-plus" style="font-size: 2rem; color: #3b5998;"></i>
                 </div>
                 <h2>Créez votre compte</h2>
-                <p>Rejoignez ImmoGest et profitez d'une gestion immobilière simplifiée et efficace.</p>
+                <p>Rejoignez Jare industrie et profitez d'une gestion immobilière simplifiée et efficace.</p>
                 
                 <div class="register-steps">
                     <div class="step-item">
@@ -468,24 +468,26 @@
 
         <div class="register-right">
             <div class="register-header">
-                <h3>Inscription Client</h3>
-                <p>Veuillez remplir tous les champs ci-dessous</p>
-            </div>
+                    <h3>Inscription Utilisateur</h3>
+                    <p>Veuillez remplir tous les champs ci-dessous</p>
+                </div>
 
-            <form method="POST" action="{{ route('client.register') }}">
+            <form method="POST" action="{{ route('register') }}">
                 @csrf
 
                 <div class="form-group">
-                    <label for="type" class="form-label">Type de client</label>
+                    <label for="role" class="form-label">Rôle</label>
                     <div class="input-wrapper">
                         <i class="fas fa-user-tag input-icon"></i>
-                        <select id="type" class="form-select @error('type_client') is-invalid @enderror" name="type_client" required>
-                            <option value="">Sélectionner le type</option>
-                            <option value="individuel" {{ old('type_client') == 'individuel' ? 'selected' : '' }}>Individuel</option>
-                            <option value="mutuelle" {{ old('type_client') == 'mutuelle' ? 'selected' : '' }}>Mutuelle</option>
-                            <option value="individuel-banque" {{ old('type_client') == 'individuel-banque' ? 'selected' : '' }}>Individuel-Banque</option>
+                        <select id="role" class="form-select @error('role') is-invalid @enderror" name="role" required>
+                            <option value="">Sélectionner le rôle</option>
+                            <option value="dg" {{ old('role') == 'dg' ? 'selected' : '' }}>Directeur Général</option>
+                            <option value="comptable" {{ old('role') == 'comptable' ? 'selected' : '' }}>Comptable</option>
+                            <option value="operateur" {{ old('role') == 'operateur' ? 'selected' : '' }}>Opérateur de saisie</option>
+                            <option value="chef_commercial" {{ old('role') == 'chef_commercial' ? 'selected' : '' }}>Chef Commercial</option>
+                            <option value="admin_technique" {{ old('role') == 'admin_technique' ? 'selected' : '' }}>Administrateur Technique</option>
                         </select>
-                        @error('type_client')
+                        @error('role')
                             <span class="invalid-feedback" role="alert">
                                 <strong>{{ $message }}</strong>
                             </span>
@@ -505,7 +507,7 @@
                                 name="nom" 
                                 value="{{ old('nom') }}" 
                                 required 
-                                autocomplete="nom" 
+                                autocomplete="family-name" 
                                 autofocus
                                 placeholder="Votre nom"
                             >
@@ -528,7 +530,7 @@
                                 name="prenom" 
                                 value="{{ old('prenom') }}" 
                                 required 
-                                autocomplete="prenom"
+                                autocomplete="given-name"
                                 placeholder="Votre prénom"
                             >
                             @error('prenom')
@@ -540,6 +542,53 @@
                     </div>
                 </div>
 
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="telephone" class="form-label">Téléphone</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-phone input-icon"></i>
+                            <input 
+                                id="telephone" 
+                                type="tel" 
+                                class="form-control @error('telephone') is-invalid @enderror" 
+                                name="telephone" 
+                                value="{{ old('telephone') }}" 
+                                required 
+                                autocomplete="tel"
+                                placeholder="Votre numéro de téléphone"
+                            >
+                            @error('telephone')
+                                <span class="invalid-feedback" role="alert">
+                                    <strong>{{ $message }}</strong>
+                                </span>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="adresse" class="form-label">Adresse</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-map-marker-alt input-icon"></i>
+                            <input 
+                                id="adresse" 
+                                type="text" 
+                                class="form-control @error('adresse') is-invalid @enderror" 
+                                name="adresse" 
+                                value="{{ old('adresse') }}" 
+                                required 
+                                autocomplete="street-address"
+                                placeholder="Votre adresse"
+                            >
+                            @error('adresse')
+                                <span class="invalid-feedback" role="alert">
+                                    <strong>{{ $message }}</strong>
+                                </span>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+
+                 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="email" class="form-label">Adresse Email</label>
@@ -562,96 +611,9 @@
                             @enderror
                         </div>
                     </div>
-
-                    <div class="form-group">
-                        <label for="telephone" class="form-label">Téléphone</label>
-                        <div class="input-wrapper">
-                            <i class="fas fa-phone input-icon"></i>
-                            <input 
-                                id="telephone" 
-                                type="tel" 
-                                class="form-control @error('telephone') is-invalid @enderror" 
-                                name="telephone" 
-                                value="{{ old('telephone') }}" 
-                                required 
-                                autocomplete="tel"
-                                placeholder="+225 XX XX XX XX XX"
-                            >
-                            @error('telephone')
-                                <span class="invalid-feedback" role="alert">
-                                    <strong>{{ $message }}</strong>
-                                </span>
-                            @enderror
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="adresse" class="form-label">Adresse</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-map-marker-alt input-icon"></i>
-                        <textarea 
-                            id="adresse" 
-                            class="form-control @error('adresse') is-invalid @enderror" 
-                            name="adresse" 
-                            required 
-                            autocomplete="street-address"
-                            placeholder="Votre adresse complète"
-                        >{{ old('adresse') }}</textarea>
-                        @error('adresse')
-                            <span class="invalid-feedback" role="alert">
-                                <strong>{{ $message }}</strong>
-                            </span>
-                        @enderror
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="ville" class="form-label">Ville</label>
-                        <div class="input-wrapper">
-                            <i class="fas fa-city input-icon"></i>
-                            <input 
-                                id="ville" 
-                                type="text" 
-                                class="form-control @error('ville') is-invalid @enderror" 
-                                name="ville" 
-                                value="{{ old('ville') }}" 
-                                required 
-                                autocomplete="address-level2"
-                                placeholder="Votre ville"
-                            >
-                            @error('ville')
-                                <span class="invalid-feedback" role="alert">
-                                    <strong>{{ $message }}</strong>
-                                </span>
-                            @enderror
-                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="code_postal" class="form-label">Code Postal</label>
-                        <div class="input-wrapper">
-                            <i class="fas fa-mail-bulk input-icon"></i>
-                            <input 
-                                id="code_postal" 
-                                type="text" 
-                                class="form-control @error('code_postal') is-invalid @enderror" 
-                                name="code_postal" 
-                                value="{{ old('code_postal') }}" 
-                                required 
-                                autocomplete="postal-code"
-                                placeholder="Code postal"
-                            >
-                            @error('code_postal')
-                                <span class="invalid-feedback" role="alert">
-                                    <strong>{{ $message }}</strong>
-                                </span>
-                            @enderror
-                        </div>
-                    </div>
-                </div>
-
+                   
                 <div class="form-row">
                     <div class="form-group">
                         <label for="password" class="form-label">Mot de passe</label>
@@ -705,7 +667,7 @@
                 </div>
 
                 <div class="login-link">
-                    Vous avez déjà un compte? <a href="{{ route('client.login') }}">Se connecter</a>
+                    Vous avez déjà un compte? <a href="{{ route('login') }}">Se connecter</a>
                 </div>
             </form>
         </div>

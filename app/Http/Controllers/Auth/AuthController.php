@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
-class ClientAuthController extends Controller
+class AuthController extends Controller
 {
     public function showRegistrationForm()
     {
@@ -20,14 +20,12 @@ class ClientAuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'type_client' => 'required|in:individuel,mutuelle,individuel-banque',
+            'role' => 'required|in:dg,comptable,operateur,chef_commercial,admin_technique',
             'nom' => 'required|string|max:255',
             'prenom' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
             'telephone' => 'required|string|max:20',
-            'adresse' => 'required|string|max:500',
-            'ville' => 'required|string|max:100',
-            'code_postal' => 'required|string|max:20',
+            'adresse' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
@@ -36,29 +34,32 @@ class ClientAuthController extends Controller
             'name' => $request->nom . ' ' . $request->prenom,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'client',
-        ]);
-
-        // Créer le client
-        $client = Client::create([
-            'user_id' => $user->id,
-            'type_client' => $request->type_client,
-            'nom' => $request->nom,
-            'prenom' => $request->prenom,
+            'role' => $request->role,
             'telephone' => $request->telephone,
             'adresse' => $request->adresse,
-            'ville' => $request->ville,
-            'code_postal' => $request->code_postal,
-            'email' => $request->email,
-            'statut' => 'actif',
-            'date_adhesion' => now(),
         ]);
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect()->route('client.dashboard');
+        // Rediriger vers le tableau de bord approprié selon le rôle
+        switch ($user->role) {
+            case User::ROLE_DG:
+                return redirect()->route('dg.dashboard');
+            case User::ROLE_COMPTABLE:
+                return redirect()->route('comptable.dashboard');
+            case User::ROLE_OPERATEUR:
+                return redirect()->route('operateur.dashboard');
+            case User::ROLE_CHEF_COMMERCIAL:
+                return redirect()->route('chef_commercial.dashboard');
+            case User::ROLE_ADMIN_TECHNIQUE:
+                return redirect()->route('admin.dashboard');
+            case User::ROLE_CLIENT:
+                return redirect()->route('client.dashboard');
+            default:
+                return redirect()->route('login');
+        }
     }
 
     public function showLoginForm()
@@ -80,13 +81,22 @@ class ClientAuthController extends Controller
             $request->session()->regenerate();
 
             // Vérifier si l'utilisateur est un client
-            if (Auth::user()->role === 'client') {
-                return redirect()->intended('client/dashboard');
-            } else {
-                Auth::logout();
-                return back()->withErrors([
-                    'email' => 'Ces identifiants ne correspondent pas à un compte client.',
-                ]);
+            $user = Auth::user();
+            switch ($user->role) {
+                case User::ROLE_DG:
+                    return redirect()->route('dg.dashboard');
+                case User::ROLE_COMPTABLE:
+                    return redirect()->route('comptable.dashboard');
+                case User::ROLE_OPERATEUR:
+                    return redirect()->route('operateur.dashboard');
+                case User::ROLE_CHEF_COMMERCIAL:
+                    return redirect()->route('chef_commercial.dashboard');
+                case User::ROLE_ADMIN_TECHNIQUE:
+                    return redirect()->route('admin.dashboard');
+                case User::ROLE_CLIENT:
+                    return redirect()->route('client.dashboard');
+                default:
+                    return redirect()->route('login');
             }
         }
 

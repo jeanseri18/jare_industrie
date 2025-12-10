@@ -301,8 +301,8 @@
     <div class="hero-content">
         <h1>Plateforme de gestion immobilière intégrée : souscription, suivi des paiements et gestion des attributions de lots.</h1>
         <div class="hero-buttons">
-            <a href="{{ route('client.login') }}" class="btn-outline">SE CONNECTER</a>
-            <a href="{{ route('client.register') }}" class="btn-white">S'INSCRIRE</a>
+            <a href="{{ route('login') }}" class="btn-outline">SE CONNECTER</a>
+            <a href="{{ route('register') }}" class="btn-white">S'INSCRIRE</a>
         </div>
     </div>
 </div>

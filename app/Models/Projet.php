@@ -8,49 +8,54 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Projet extends Model
 {
-    const STATUT_EN_COURS = 'en_cours';
-    const STATUT_TERMINE = 'termine';
-    const STATUT_ANNULE = 'annule';
-
     protected $fillable = [
         'nom',
-        'description',
-        'adresse',
-        'ville',
-        'date_debut',
-        'date_fin_prevue',
-        'date_fin_reelle',
-        'statut',
-        'nombre_logements',
-        'cout_total',
-        'avancement',
+        'localisation',
+        'superficie',
+        'isduplex',
+        'isterrains',
+        'isvillabase',
+        'isappartement',
+        'prix_terrains',
+        'prix_duplex',
+        'prix_villa',
+        'prix_appartement',
+        'nb_logements',
+        'pourcentage_apport',
+        'frais_souscription',
+        'est_actif',
+        'est_mutuelle',
+        'mutuelle_id',
+        'cree_par'
     ];
 
     protected $casts = [
-        'date_debut' => 'date',
-        'date_fin_prevue' => 'date',
-        'date_fin_reelle' => 'date',
-        'cout_total' => 'decimal:2',
-        'avancement' => 'integer',
+        'superficie' => 'decimal:2',
+        'isduplex' => 'boolean',
+        'isterrains' => 'boolean',
+        'isvillabase' => 'boolean',
+        'isappartement' => 'boolean',
+        'prix_terrains' => 'decimal:2',
+        'prix_duplex' => 'decimal:2',
+        'prix_villa' => 'decimal:2',
+        'prix_appartement' => 'decimal:2',
+        'est_actif' => 'boolean',
+        'est_mutuelle' => 'boolean',
+        'frais_souscription' => 'integer'
     ];
 
-    public function logements(): HasMany
+    public function mutuelle(): BelongsTo
     {
-        return $this->hasMany(Logement::class);
+        return $this->belongsTo(Mutuelle::class);
+    }
+
+    public function creePar(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cree_par');
     }
 
     public function souscriptions(): HasMany
     {
         return $this->hasMany(Souscription::class);
-    }
-
-    public function isEnCours(): bool
-    {
-        return $this->statut === self::STATUT_EN_COURS;
-    }
-
-    public function isTermine(): bool
-    {
-        return $this->statut === self::STATUT_TERMINE;
     }
 }
