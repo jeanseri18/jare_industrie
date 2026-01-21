@@ -31,9 +31,10 @@
                 
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label for="code" class="form-label">Code de la Mutuelle *</label>
+                        <label for="code" class="form-label">Code de la Mutuelle</label>
                         <input type="text" class="form-control @error('code') is-invalid @enderror" 
-                               id="code" name="code" value="{{ old('code') }}" required>
+                               id="code" name="code" value="{{ old('code') }}" placeholder="Laisser vide pour génération automatique">
+                        <small class="form-text text-muted">Si laissé vide, un code sera généré automatiquement</small>
                         @error('code')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -44,10 +45,10 @@
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label for="valeur_du_bien" class="form-label">Valeur du Bien *</label>
-                        <input type="number" step="0.01" class="form-control @error('valeur_du_bien') is-invalid @enderror" 
-                               id="valeur_du_bien" name="valeur_du_bien" value="{{ old('valeur_du_bien') }}" required>
-                        @error('valeur_du_bien')
+                        <label for="site_web" class="form-label">Site Web</label>
+                        <input type="url" class="form-control @error('site_web') is-invalid @enderror" 
+                               id="site_web" name="site_web" value="{{ old('site_web') }}">
+                        @error('site_web')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
@@ -68,10 +69,30 @@
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label for="apport_initial" class="form-label">Apport Initial *</label>
-                        <input type="number" step="0.01" class="form-control @error('apport_initial') is-invalid @enderror" 
-                               id="apport_initial" name="apport_initial" value="{{ old('apport_initial') }}" min="0" required>
-                        @error('apport_initial')
+                        <label for="nom_contact" class="form-label">Nom du Contact</label>
+                        <input type="text" class="form-control @error('nom_contact') is-invalid @enderror" 
+                               id="nom_contact" name="nom_contact" value="{{ old('nom_contact') }}">
+                        @error('nom_contact')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="telephone_contact" class="form-label">Téléphone du Contact</label>
+                        <input type="text" class="form-control @error('telephone_contact') is-invalid @enderror" 
+                               id="telephone_contact" name="telephone_contact" value="{{ old('telephone_contact') }}">
+                        @error('telephone_contact')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="email_contact" class="form-label">E-mail du Contact</label>
+                        <input type="email" class="form-control @error('email_contact') is-invalid @enderror" 
+                               id="email_contact" name="email_contact" value="{{ old('email_contact') }}">
+                        @error('email_contact')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
@@ -80,12 +101,18 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="project_id" class="form-label">Projet Associé (Optionnel)</label>
-                        <select class="form-select @error('project_id') is-invalid @enderror" id="project_id" name="project_id">
-                            <option value="">-- Sélectionner un projet --</option>
-                            @foreach($projets as $id => $nom)
-                                <option value="{{ $id }}" {{ old('project_id') == $id ? 'selected' : '' }}>{{ $nom }}</option>
-                            @endforeach
-                        </select>
+                        <div class="input-group">
+                            <select class="form-select @error('project_id') is-invalid @enderror" id="project_id" name="project_id">
+                                <option value="">-- Sélectionner un projet --</option>
+                                @foreach($projets as $id => $nom)
+                                    <option value="{{ $id }}" {{ old('project_id') == $id ? 'selected' : '' }}>{{ $nom }}</option>
+                                @endforeach
+                            </select>
+                            <a href="{{ route('dg.projets.create') }}" target="_blank" class="btn btn-outline-secondary" title="Créer un nouveau projet">
+                                <i class="fas fa-plus"></i> Créer
+                            </a>
+                        </div>
+                        <small class="form-text text-muted">Si aucun projet n'existe, cliquez sur "Créer" pour en ajouter un nouveau</small>
                         @error('project_id')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror

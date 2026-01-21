@@ -29,13 +29,15 @@ class MutuelleController extends Controller
     {
         $request->validate([
             'nom' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:mutuelles',
+            'code' => 'nullable|string|max:50|unique:mutuelles',
             'description' => 'nullable|string',
-            'valeur_du_bien' => 'required|numeric|min:0',
             'taux_reduction' => 'required|numeric|min:0|max:100',
-            'apport_initial' => 'required|numeric|min:0',
             'est_active' => 'boolean',
-            'project_id' => 'nullable|exists:projets,id'
+            'project_id' => 'nullable|exists:projets,id',
+            'site_web' => 'nullable|url|max:255',
+            'nom_contact' => 'nullable|string|max:255',
+            'telephone_contact' => 'nullable|string|max:20',
+            'email_contact' => 'nullable|email|max:255'
         ]);
 
         $mutuelle = Mutuelle::create(array_merge(
@@ -68,13 +70,15 @@ class MutuelleController extends Controller
     {
         $request->validate([
             'nom' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:mutuelles,code,' . $mutuelle->id,
+            'code' => 'nullable|string|max:50|unique:mutuelles,code,' . $mutuelle->id,
             'description' => 'nullable|string',
-            'valeur_du_bien' => 'required|numeric|min:0',
             'taux_reduction' => 'required|numeric|min:0|max:100',
-            'apport_initial' => 'required|numeric|min:0',
             'est_active' => 'boolean',
-            'project_id' => 'nullable|exists:projets,id'
+            'project_id' => 'nullable|exists:projets,id',
+            'site_web' => 'nullable|url|max:255',
+            'nom_contact' => 'nullable|string|max:255',
+            'telephone_contact' => 'nullable|string|max:20',
+            'email_contact' => 'nullable|email|max:255'
         ]);
 
         $mutuelle->update($request->all());

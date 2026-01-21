@@ -606,7 +606,10 @@
                     <i class="fas fa-users"></i>
                     <span>Gestion des clients</span>
                 </a>
-            </li>
+            </li>  <li class="nav-item">
+                    <a href="{{ route('dg.equipes.index') }}"  class="nav-link {{ request()->routeIs('dg.equipes.*') ? 'active' : '' }}">
+            <i class="fas fa-user-check me-2"></i>   <span>Suivi des équipes   </span>
+        </a>    </li>
 
             <li class="nav-item">
                 <a href="{{ route('dg.projets.index') }}" class="nav-link {{ request()->routeIs('dg.projets.*') ? 'active' : '' }}">
@@ -619,6 +622,20 @@
                 <a href="{{ route('dg.mutuelles.index') }}" class="nav-link {{ request()->routeIs('dg.mutuelles.*') ? 'active' : '' }}">
                     <i class="fas fa-handshake"></i>
                     <span>Gestion des mutuelles</span>
+                </a>
+            </li>
+
+            <!-- Nouveaux onglets -->
+            <li class="nav-item">
+                <a href="{{ route('dg.attribution.index') }}" class="nav-link {{ request()->routeIs('dg.attribution.*') ? 'active' : '' }}">
+                    <i class="fas fa-home"></i>
+                    <span>Attribution de logement</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('dg.confirmation.index') }}" class="nav-link {{ request()->routeIs('dg.confirmation.*') ? 'active' : '' }}">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Confirmation de dossier</span>
                 </a>
             </li>
 

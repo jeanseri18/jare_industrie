@@ -38,7 +38,7 @@ class OperateurController extends Controller
 
         // Souscriptions récentes de l'opérateur
         $souscriptions = Souscription::where('operateur_id', $user->id)
-            ->with(['client'])
+            ->with(['client', 'bienImmobilier'])
             ->latest()
             ->take(10)
             ->get();
@@ -50,6 +50,13 @@ class OperateurController extends Controller
                 $souscription->nom_programme = $projet ? $projet->nom : 'Projet non défini';
             } else {
                 $souscription->nom_programme = 'Projet non défini';
+            }
+            
+            // Si type_logement est vide ou null, récupérer le titre du bien immobilier
+            if (empty($souscription->type_logement) && $souscription->bienImmobilier) {
+                if (!empty($souscription->bienImmobilier->titre)) {
+                    $souscription->type_logement = $souscription->bienImmobilier->titre;
+                }
             }
         }
 
@@ -88,7 +95,13 @@ class OperateurController extends Controller
     public function create()
     {
         $projets = Projet::where('est_actif', true)->get();
-        return view('operateursaisi.create', compact('projets'));
+        $biensImmobiliers = [];
+        
+        foreach ($projets as $projet) {
+            $biensImmobiliers[$projet->id] = \App\Models\BienImmobilier::where('idprojet', $projet->id)->get();
+        }
+        
+        return view('operateursaisi.create', compact('projets', 'biensImmobiliers'));
     }
 
     public function store(Request $request)
@@ -110,7 +123,11 @@ class OperateurController extends Controller
             'program' => 'required|exists:projets,id',
             'startDate' => 'required|date',
             'endDate' => 'required|date|after:startDate',
-            'housingType' => 'required|string',
+            'housingType' => ['required', 'string', function($attribute, $value, $fail) {
+                if (!preg_match('/^[0-9]+\|.+$/', $value)) {
+                    $fail('Le format du type de logement est invalide.');
+                }
+            }],
             'paymentMode' => 'required|string',
             'valeur_souscription' => 'required|numeric|min:0',
             'apport_initial' => 'required|numeric|min:0',
@@ -180,7 +197,7 @@ class OperateurController extends Controller
         $souscription = new Souscription();
         $souscription->operateur_id = Auth::id();
         $souscription->client_id = $client->id;
-        $souscription->categorie_client = $categorieClientMap[$request->clientCategory] ?? 'individuel';
+        $souscription->categorie_client = $categorieClientMap[$request->clientCategory] ?? 'particulier';
         $souscription->nom_prenom = $request->fullName;
         $souscription->date_naissance = $request->birthDate;
         $souscription->lieu_naissance = $request->birthPlace;
@@ -198,7 +215,29 @@ class OperateurController extends Controller
         $souscription->programme = $request->program;
         $souscription->date_debut = $request->startDate;
         $souscription->date_fin = $request->endDate;
-        $souscription->type_logement = $request->housingType;
+        
+        // Calculer automatiquement la durée du contrat en mois
+        $dateDebut = \Carbon\Carbon::parse($request->startDate);
+        $dateFin = \Carbon\Carbon::parse($request->endDate);
+        $souscription->duree_contrat_mois = $dateDebut->diffInMonths($dateFin);
+        
+        // Extraire l'ID et le nom du bien immobilier du format "id|nom"
+        $housingTypeParts = explode('|', $request->housingType);
+        if (count($housingTypeParts) === 2) {
+            [$bienId, $bienNom] = $housingTypeParts;
+            $souscription->bien_immobilier_id = $bienId;
+            
+            // Récupérer le bien immobilier et utiliser son titre comme source de vérité
+            $bienImmobilier = \App\Models\BienImmobilier::find($bienId);
+            $souscription->type_logement = $bienImmobilier ? $bienImmobilier->titre : $bienNom;
+            $souscription->prix_logement = $bienImmobilier ? $bienImmobilier->prix : $request->valeur_souscription;
+        } else {
+            // Si le format n'est pas correct, utiliser la valeur brute
+            $souscription->type_logement = $request->housingType;
+            $souscription->bien_immobilier_id = null;
+            $souscription->prix_logement = $request->valeur_souscription;
+        }
+        
         $souscription->mode_paiement = $request->paymentMode;
         $souscription->valeur_souscription = $request->valeur_souscription;
         $souscription->apport_initial = $request->apport_initial;
@@ -212,7 +251,42 @@ class OperateurController extends Controller
         
         $souscription->save();
 
-        return redirect()->route('operateur.dashboard')
+        // Créer automatiquement les paiements pour les frais de dossier et l'apport initial
+        $this->createPaymentFromSubscription($souscription);
+
+        return redirect()->route('operateur.souscriptions.create')
             ->with('success', 'Souscription créée avec succès et soumise pour validation.');
+    }
+
+    /**
+     * Créer automatiquement les paiements pour une souscription
+     */
+    private function createPaymentFromSubscription(Souscription $souscription)
+    {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($souscription) {
+            // Créer le paiement frais de dossier
+            if ($souscription->frais_souscription > 0) {
+                \App\Models\FraisDossier::create([
+                    'id_souscription' => $souscription->id,
+                    'id_projet' => $souscription->programme,
+                    'montant' => $souscription->frais_souscription,
+                    'montant_paye' => 0,
+                    'montant_reste' => $souscription->frais_souscription,
+                    'id_comptable' => null,
+                ]);
+            }
+
+            // Créer l'apport initial
+            if ($souscription->apport_initial > 0) {
+                \App\Models\ApportInitial::create([
+                    'id_souscription' => $souscription->id,
+                    'id_projet' => $souscription->programme,
+                    'montant' => $souscription->apport_initial,
+                    'montant_paye' => 0,
+                    'montant_reste' => $souscription->apport_initial,
+                    'id_comptable' => null,
+                ]);
+            }
+        });
     }
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Souscription extends Model
 {
@@ -30,6 +31,8 @@ class Souscription extends Model
         'date_debut',
         'date_fin',
         'type_logement',
+        'bien_immobilier_id',
+        'prix_logement',
         'mode_paiement',
         'valeur_souscription',
         'apport_initial',
@@ -71,5 +74,13 @@ class Souscription extends Model
         return $this->belongsTo(Projet::class, 'programme', 'id');
     }
 
+    public function bienImmobilier(): BelongsTo
+    {
+        return $this->belongsTo(BienImmobilier::class, 'bien_immobilier_id');
+    }
 
+    public function attributionLot(): HasOne
+    {
+        return $this->hasOne(AttributionLot::class, 'id_souscription');
+    }
 }

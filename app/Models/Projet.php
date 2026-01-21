@@ -12,17 +12,7 @@ class Projet extends Model
         'nom',
         'localisation',
         'superficie',
-        'isduplex',
-        'isterrains',
-        'isvillabase',
-        'isappartement',
-        'prix_terrains',
-        'prix_duplex',
-        'prix_villa',
-        'prix_appartement',
         'nb_logements',
-        'pourcentage_apport',
-        'frais_souscription',
         'est_actif',
         'est_mutuelle',
         'mutuelle_id',
@@ -31,17 +21,8 @@ class Projet extends Model
 
     protected $casts = [
         'superficie' => 'decimal:2',
-        'isduplex' => 'boolean',
-        'isterrains' => 'boolean',
-        'isvillabase' => 'boolean',
-        'isappartement' => 'boolean',
-        'prix_terrains' => 'decimal:2',
-        'prix_duplex' => 'decimal:2',
-        'prix_villa' => 'decimal:2',
-        'prix_appartement' => 'decimal:2',
         'est_actif' => 'boolean',
-        'est_mutuelle' => 'boolean',
-        'frais_souscription' => 'integer'
+        'est_mutuelle' => 'boolean'
     ];
 
     public function mutuelle(): BelongsTo
@@ -56,6 +37,11 @@ class Projet extends Model
 
     public function souscriptions(): HasMany
     {
-        return $this->hasMany(Souscription::class);
+        return $this->hasMany(Souscription::class, 'programme', 'id');
+    }
+
+    public function bien_immobiliers(): HasMany
+    {
+        return $this->hasMany(BienImmobilier::class, 'idprojet');
     }
 }

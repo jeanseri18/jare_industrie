@@ -12,20 +12,31 @@ class Mutuelle extends Model
         'nom',
         'code',
         'description',
-        'valeur_du_bien',
         'taux_reduction',
-        'apport_initial',
         'est_active',
         'cree_par',
-        'project_id'
+        'project_id',
+        'site_web',
+        'nom_contact',
+        'telephone_contact',
+        'email_contact'
     ];
 
     protected $casts = [
         'est_active' => 'boolean',
-        'valeur_du_bien' => 'decimal:2',
-        'taux_reduction' => 'decimal:2',
-        'apport_initial' => 'decimal:2'
+        'taux_reduction' => 'decimal:2'
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($mutuelle) {
+            if (empty($mutuelle->code)) {
+                $mutuelle->code = 'MUT-' . str_pad(static::max('id') + 1, 4, '0', STR_PAD_LEFT);
+            }
+        });
+    }
 
     public function creePar(): BelongsTo
     {

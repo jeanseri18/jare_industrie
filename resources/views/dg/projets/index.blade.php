@@ -28,7 +28,8 @@
                                     <th>Nom</th>
                                     <th>Localisation</th>
                                     <th>Superficie</th>
-                                    <th>Type</th>
+                                    <th>detail</th>
+                                    <th>Souscriptions Actives</th>
                                     <th>Statut</th>
                                     <th>Actions</th>
                                 </tr>
@@ -41,18 +42,14 @@
                                     <td>{{ $projet->localisation ?? 'Non définie' }}</td>
                                     <td>{{ $projet->superficie ?? 'N/A' }} m²</td>
                                     <td>
-                                        @if($projet->isduplex)
-                                            <span class="badge-custom badge-primary">Duplex</span>
-                                        @endif
-                                        @if($projet->isappartement)
-                                            <span class="badge-custom badge-info">Appartement</span>
-                                        @endif
-                                        @if($projet->isvillabase)
-                                            <span class="badge-custom badge-success">Villa</span>
-                                        @endif
-                                        @if($projet->isterrains)
-                                            <span class="badge-custom badge-warning">Terrain</span>
-                                        @endif
+                                        <a href="{{ route('dg.projets.biens.index', $projet) }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-building"></i> Voir les biens ({{ $projet->bien_immobiliers->count() }})
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge-custom badge-info">
+                                            {{ $projet->souscriptions()->whereIn('statut', ['valide', 'ATTRIBUE', 'SOLD'])->count() }}
+                                        </span>
                                     </td>
                                     <td>
                                         <span class="badge-custom badge-{{ $projet->est_actif ? 'success' : 'danger' }}">

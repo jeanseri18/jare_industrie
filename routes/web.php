@@ -41,17 +41,33 @@ Route::prefix('dg')->name('dg.')->middleware('auth')->group(function () {
 });
 
 // Routes pour Comptable
-Route::prefix('comptable')->name('comptable.')->middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('comptable.dashboard');
-    })->name('dashboard');
+Route::middleware('auth')->group(function () {
+    // Inclure les routes Comptable
+    require __DIR__.'/comptable.php';
 });
 
 // Routes pour Chef Commercial
 Route::prefix('chef_commercial')->name('chef_commercial.')->middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('chef_commercial.dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\ChefCommercial\ChefCommercialController::class, 'dashboard'])
+        ->name('dashboard');
+
+    // Liste des souscriptions corrigées
+    Route::get('/souscriptions/corrigees', [\App\Http\Controllers\ChefCommercial\ChefCommercialController::class, 'corrigees'])
+        ->name('souscriptions.corrigees');
+
+    // Nouvelle souscription (contrôleur)
+    Route::get('/souscriptions/create', [\App\Http\Controllers\ChefCommercial\ChefCommercialController::class, 'create'])
+        ->name('souscriptions.create');
+
+    // Enregistrer souscription (contrôleur)
+    Route::post('/souscriptions', [\App\Http\Controllers\ChefCommercial\ChefCommercialController::class, 'store'])
+        ->name('souscriptions.store');
+
+    // Modifier une souscription (contrôleur)
+    Route::get('/souscriptions/{souscription}/edit', [\App\Http\Controllers\ChefCommercial\ChefCommercialController::class, 'edit'])
+        ->name('souscriptions.edit');
+    Route::put('/souscriptions/{souscription}', [\App\Http\Controllers\ChefCommercial\ChefCommercialController::class, 'update'])
+        ->name('souscriptions.update');
 });
 
 // Routes pour Admin Technique

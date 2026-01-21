@@ -26,9 +26,9 @@
                         <th>ID</th>
                         <th>Nom</th>
                         <th>Code</th>
-                        <th>Valeur du Bien</th>
+                        <th>Contact</th>
                         <th>Taux de Réduction</th>
-                        <th>Apport Initial</th>
+                        <th>Site Web</th>
                         <th>Projet Associé</th>
                         <th>Statut</th>
                         <th>Actions</th>
@@ -43,9 +43,26 @@
                             </td>
                             <td>{{ $mutuelle->nom }}</td>
                             <td>{{ $mutuelle->code }}</td>
-                            <td>{{ number_format($mutuelle->valeur_du_bien, 2, ',', ' ') }} F CFA</td>
+                            <td>
+                                @if($mutuelle->nom_contact)
+                                    <div>{{ $mutuelle->nom_contact }}</div>
+                                    @if($mutuelle->telephone_contact)
+                                        <small class="text-muted">{{ $mutuelle->telephone_contact }}</small>
+                                    @endif
+                                @else
+                                    <span class="text-muted">Aucun contact</span>
+                                @endif
+                            </td>
                             <td>{{ $mutuelle->taux_reduction }}%</td>
-                            <td>{{ number_format($mutuelle->apport_initial, 2, ',', ' ') }} F CFA</td>
+                            <td>
+                                @if($mutuelle->site_web)
+                                    <a href="{{ $mutuelle->site_web }}" target="_blank" class="text-primary">
+                                        <i class="fas fa-external-link-alt"></i> Visiter
+                                    </a>
+                                @else
+                                    <span class="text-muted">Non défini</span>
+                                @endif
+                            </td>
                             <td>
                                 @if($mutuelle->projet)
                                     <span class="badge-custom badge-info">{{ $mutuelle->projet->nom }}</span>

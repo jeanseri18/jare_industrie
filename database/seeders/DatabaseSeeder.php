@@ -78,29 +78,26 @@ class DatabaseSeeder extends Seeder
         // Create some test clients
         $clients = [
             [
-                'categorie' => 'Individuel',
-                'nom' => 'Jean',
-                'prenom' => 'Pierre',
+                'categorie_client' => 'individuel',
+                'nom_prenom' => 'Jean Pierre',
                 'email' => 'jean.pierre@email.com',
                 'telephone' => '509-3401-2345',
-                'adresse' => 'Delmas 33, Port-au-Prince',
                 'date_naissance' => '1985-03-15',
                 'nationalite' => 'Haïtienne',
-                'situation_familiale' => 'Marié(e)',
+                'situation_matrimoniale' => 'marie',
                 'nombre_enfants' => 2,
-                'nature_piece_identite' => 'CNI',
-                'numero_piece_identite' => 'CI-1985-0315'
+                'nature_piece' => 'cni',
+                'numero_piece' => 'CI-1985-0315'
             ],
             [
-                'categorie' => 'Mutuelle',
-                'nom' => 'Mutuelle des Enseignants',
-                'prenom' => 'du Primaire',
+                'categorie_client' => 'mutuelle',
+                'nom_prenom' => 'Mutuelle des Enseignants du Primaire',
                 'email' => 'mutuelle.enseignants@email.com',
                 'telephone' => '509-3402-3456',
-                'adresse' => 'Route de Delmas, Port-au-Prince',
+                'date_naissance' => '2000-01-01',
                 'nationalite' => 'Haïtienne',
-                'nature_piece_identite' => 'Passeport',
-                'numero_piece_identite' => 'PA-2023-001'
+                'nature_piece' => 'passeport',
+                'numero_piece' => 'PA-2023-001'
             ]
         ];
 
@@ -114,16 +111,7 @@ class DatabaseSeeder extends Seeder
                 'nom' => 'Résidence Belle-Vue',
                 'localisation' => 'Delmas 75, Pétion-Ville',
                 'superficie' => 5000,
-                'isduplex' => true,
-                'isterrains' => false,
-                'isvillabase' => true,
-                'isappartement' => true,
-                'prix_duplex' => 2500000,
-                'prix_villa' => 3500000,
-                'prix_appartement' => 1800000,
                 'nb_logements' => 50,
-                'pourcentage_apport' => 10,
-                'frais_souscription' => 50000,
                 'est_actif' => true,
                 'est_mutuelle' => false,
                 'cree_par' => $admin->id
@@ -132,14 +120,7 @@ class DatabaseSeeder extends Seeder
                 'nom' => 'Complexe Commercial Carrefour',
                 'localisation' => 'Route de Carrefour',
                 'superficie' => 3000,
-                'isduplex' => false,
-                'isterrains' => true,
-                'isvillabase' => false,
-                'isappartement' => false,
-                'prix_terrains' => 1500000,
                 'nb_logements' => 30,
-                'pourcentage_apport' => 15,
-                'frais_souscription' => 75000,
                 'est_actif' => true,
                 'est_mutuelle' => false,
                 'cree_par' => $dg->id

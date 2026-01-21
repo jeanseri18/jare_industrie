@@ -16,14 +16,17 @@ class Paiement extends Model
         'date_paiement',
         'comptable_id',
         'valide_at',
-        'cree_at'
+        'cree_at',
+        'statut',
+        'preuve_paiement'
     ];
 
     protected $casts = [
         'date_paiement' => 'date',
         'valide_at' => 'datetime',
         'cree_at' => 'datetime',
-        'montant' => 'decimal:2'
+        'montant' => 'decimal:2',
+        'statut' => 'string'
     ];
 
     public function souscription(): BelongsTo

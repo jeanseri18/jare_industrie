@@ -427,7 +427,7 @@
                                     <span class="status-badge status-attente">{{ ucfirst($souscription->statut) }}</span>
                                 @endif
                             </td>
-                            <td><button class="btn-voir">Voir</button></td>
+                            <td><button class="btn-voir" onclick='showSubscriptionDetails(@json($souscription))'>Voir</button></td>
                         </tr>
                     @empty
                         <tr>
@@ -441,4 +441,202 @@
         </div>
     </div>
 
+    </div>
+
+    <!-- Modal pour afficher les détails complets de la souscription -->
+    <div id="subscriptionModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+        <div class="modal-content" style="background-color: white; margin: 5% auto; padding: 20px; border-radius: 8px; width: 80%; max-width: 800px; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #f0f0f0;">
+                <h2 style="margin: 0; color: #2c5282;">Détails complets de la souscription</h2>
+                <span onclick="closeModal()" style="color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+            </div>
+            
+            <div id="modalContent">
+                <!-- Les détails seront chargés ici -->
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .detail-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .detail-group h3 {
+            color: #2c5282;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .detail-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #495057;
+            min-width: 150px;
+        }
+        
+        .detail-value {
+            color: #212529;
+            text-align: right;
+            flex: 1;
+            margin-left: 20px;
+        }
+        
+        .modal-close-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        
+        .modal-close-btn:hover {
+            background-color: #5a6268;
+        }
+    </style>
+
+    <script>
+        function showSubscriptionDetails(souscription) {
+            const modal = document.getElementById('subscriptionModal');
+            const modalContent = document.getElementById('modalContent');
+            
+            // Formater la date
+            const formatDate = (dateString) => {
+                if (!dateString) return 'N/A';
+                const date = new Date(dateString);
+                return date.toLocaleDateString('fr-FR');
+            };
+            
+            // Formater le montant
+            const formatMontant = (montant) => {
+                if (!montant) return '0 F CFA';
+                return new Intl.NumberFormat('fr-FR').format(montant) + ' F CFA';
+            };
+            
+            modalContent.innerHTML = `
+                <div class="detail-group">
+                    <h3>Informations de la souscription</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Référence souscription:</span>
+                        <span class="detail-value">${souscription.ref_souscription || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Date de création:</span>
+                        <span class="detail-value">${formatDate(souscription.created_at)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Statut:</span>
+                        <span class="detail-value">${souscription.statut || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Programme:</span>
+                        <span class="detail-value">${souscription.nom_programme || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Type de logement:</span>
+                        <span class="detail-value">${souscription.type_logement || 'N/A'}</span>
+                    </div>
+                </div>
+
+                <div class="detail-group">
+                    <h3>Informations du client</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Référence client:</span>
+                        <span class="detail-value">${souscription.client?.ref_client || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Nom complet:</span>
+                        <span class="detail-value">${souscription.nom_prenom || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Email:</span>
+                        <span class="detail-value">${souscription.client?.email || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Téléphone:</span>
+                        <span class="detail-value">${souscription.client?.telephone || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Catégorie client:</span>
+                        <span class="detail-value">${souscription.client?.categorie_client || 'N/A'}</span>
+                    </div>
+                </div>
+
+                <div class="detail-group">
+                    <h3>Informations financières</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Valeur de souscription:</span>
+                        <span class="detail-value">${formatMontant(souscription.valeur_souscription)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Apport initial:</span>
+                        <span class="detail-value">${formatMontant(souscription.apport_initial)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Frais de souscription:</span>
+                        <span class="detail-value">${formatMontant(souscription.frais_souscription)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Mode de paiement:</span>
+                        <span class="detail-value">${souscription.mode_paiement || 'N/A'}</span>
+                    </div>
+                </div>
+
+                <div class="detail-group">
+                    <h3>Informations complémentaires</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Date de début:</span>
+                        <span class="detail-value">${formatDate(souscription.date_debut)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Date de fin:</span>
+                        <span class="detail-value">${formatDate(souscription.date_fin)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Durée (mois):</span>
+                        <span class="detail-value">${souscription.duree_mois || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Prix du logement:</span>
+                        <span class="detail-value">${formatMontant(souscription.prix_logement)}</span>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="modal-close-btn" onclick="closeModal()">Fermer</button>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+        
+        function closeModal() {
+            document.getElementById('subscriptionModal').style.display = 'none';
+        }
+        
+        // Fermer le modal en cliquant en dehors
+        window.onclick = function(event) {
+            const modal = document.getElementById('subscriptionModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
 @endsection

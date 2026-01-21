@@ -461,14 +461,26 @@
         <p>Promoteur immobilier agréé</p>
     </div>
 
-    <div class="progress-bar">
+    <div class="progress-bar" style="{{ session('success') ? 'display:none' : '' }}">
         <div class="progress-fill" id="progressFill" style="width: 20%"></div>
     </div>
 
-    <div class="step-indicator" id="stepIndicator">1/5</div>
+    <div class="step-indicator" id="stepIndicator" style="{{ session('success') ? 'display:none' : '' }}">1/5</div>
 
-    <form id="subscriptionForm" action="{{ route('operateur.souscriptions.store') }}" method="POST" enctype="multipart/form-data">
+    <form id="subscriptionForm" action="{{ route('operateur.souscriptions.store') }}" method="POST" enctype="multipart/form-data" style="{{ session('success') ? 'display:none' : '' }}">
         @csrf
+
+        <!-- Messages d'erreur -->
+        @if ($errors->any())
+            <div class="alert alert-danger" style="margin: 20px 30px; padding: 15px; border-radius: 6px; background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24;">
+                <strong><i class="bi bi-exclamation-triangle"></i> Erreurs de validation :</strong>
+                <ul style="margin-top: 10px; margin-bottom: 0; padding-left: 20px;">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
         <!-- ÉTAPE 0: Sélection catégorie -->
         <div class="step active" id="step0">
@@ -491,7 +503,7 @@
                 </div>
             </div>
 
-            <input type="hidden" name="clientCategory" id="clientCategory" required>
+            <input type="hidden" name="clientCategory" id="clientCategory" required value="{{ old('clientCategory') }}">
 
             <div class="buttons">
                 <button type="button" class="btn-primary" onclick="nextStep()" id="continueCategory" disabled>Continuer</button>
@@ -505,69 +517,96 @@
             <div class="form-row">
                 <div class="form-group">
                     <label><i class="bi bi-person"></i> Nom et Prénom</label>
-                    <input type="text" name="fullName" required placeholder="Nom complet">
+                    <input type="text" name="fullName" required placeholder="Nom complet" class="@error('fullName') is-invalid @enderror" value="{{ old('fullName') }}">
+                    @error('fullName')
+                        <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
                     <label><i class="bi bi-calendar"></i> Date de naissance</label>
-                    <input type="date" name="birthDate" required>
+                    <input type="date" name="birthDate" required class="@error('birthDate') is-invalid @enderror" value="{{ old('birthDate') }}">
+                    @error('birthDate')
+                        <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
                     <label><i class="bi bi-geo-alt"></i> Lieu de naissance</label>
-                    <input type="text" name="birthPlace" required placeholder="Ville">
+                    <input type="text" name="birthPlace" required placeholder="Ville" class="@error('birthPlace') is-invalid @enderror" value="{{ old('birthPlace') }}">
+                    @error('birthPlace')
+                        <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
                     <label><i class="bi bi-globe"></i> Nationalité</label>
-                    <input type="text" name="nationality" required placeholder="Pays">
+                    <input type="text" name="nationality" required placeholder="Pays" class="@error('nationality') is-invalid @enderror" value="{{ old('nationality') }}">
+                    @error('nationality')
+                        <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
                     <label><i class="bi bi-person-plus"></i> Nombre d'enfants</label>
-                    <input type="number" name="children" min="0" required placeholder="0">
+                    <input type="number" name="children" min="0" required placeholder="0" class="@error('children') is-invalid @enderror" value="{{ old('children') }}">
+                    @error('children')
+                        <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
                     <label><i class="bi bi-person-heart"></i> Ayant droit</label>
-                    <input type="text" name="heirs" required placeholder="Nom de l'ayant droit">
+                    <input type="text" name="heirs" required placeholder="Nom de l'ayant droit" class="@error('heirs') is-invalid @enderror" value="{{ old('heirs') }}">
+                    @error('heirs')
+                        <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
             </div>
 
             <div class="form-group">
                 <label><i class="bi bi-envelope"></i> Email</label>
-                <input type="email" name="email" required placeholder="exemple@email.com">
+                <input type="email" name="email" required placeholder="exemple@email.com" class="@error('email') is-invalid @enderror" value="{{ old('email') }}">
+                @error('email')
+                    <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="form-group">
                 <label><i class="bi bi-cash"></i> Salaire mensuel</label>
-                <input type="text" name="salary" required placeholder="Montant en FCFA">
+                <input type="text" name="salary" required placeholder="Montant en FCFA" class="@error('salary') is-invalid @enderror" value="{{ old('salary') }}">
+                @error('salary')
+                    <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="form-group">
                 <label>Situation matrimoniale:</label>
-                <div class="checkbox-group">
+                <div class="checkbox-group @error('maritalStatus') is-invalid @enderror">
                     <div class="checkbox-item">
-                        <input type="checkbox" name="maritalStatus" value="Célibataire" id="cel">
+                        <input type="checkbox" name="maritalStatus" value="Célibataire" id="cel" {{ old('maritalStatus') == 'Célibataire' ? 'checked' : '' }}>
                         <label for="cel">Célibataire</label>
                     </div>
                     <div class="checkbox-item">
-                        <input type="checkbox" name="maritalStatus" value="Divorcé(e)" id="div">
+                        <input type="checkbox" name="maritalStatus" value="Divorcé(e)" id="div" {{ old('maritalStatus') == 'Divorcé(e)' ? 'checked' : '' }}>
                         <label for="div">Divorcé(e)</label>
                     </div>
                     <div class="checkbox-item">
-                        <input type="checkbox" name="maritalStatus" value="Marié(e)" id="mar">
+                        <input type="checkbox" name="maritalStatus" value="Marié(e)" id="mar" {{ old('maritalStatus') == 'Marié(e)' ? 'checked' : '' }}>
                         <label for="mar">Marié(e)</label>
                     </div>
                     <div class="checkbox-item">
-                        <input type="checkbox" name="maritalStatus" value="Veuf(ve)" id="veuf">
+                        <input type="checkbox" name="maritalStatus" value="Veuf(ve)" id="veuf" {{ old('maritalStatus') == 'Veuf(ve)' ? 'checked' : '' }}>
                         <label for="veuf">Veuf(ve)</label>
                     </div>
                 </div>
+                @error('maritalStatus')
+                    <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="buttons">
@@ -582,43 +621,52 @@
 
             <div class="form-group">
                 <label>Nature de la pièce:</label>
-                <div class="checkbox-group">
+                <div class="checkbox-group @error('idType') is-invalid @enderror">
                     <div class="checkbox-item">
-                        <input type="checkbox" name="idType" value="CNI" id="cni">
+                        <input type="checkbox" name="idType" value="CNI" id="cni" {{ old('idType') == 'CNI' ? 'checked' : '' }}>
                         <label for="cni">CNI</label>
                     </div>
                     <div class="checkbox-item">
-                        <input type="checkbox" name="idType" value="Passeport" id="pass">
+                        <input type="checkbox" name="idType" value="Passeport" id="pass" {{ old('idType') == 'Passeport' ? 'checked' : '' }}>
                         <label for="pass">Passeport</label>
                     </div>
                     <div class="checkbox-item">
-                        <input type="checkbox" name="idType" value="Carte consulaire" id="cons">
+                        <input type="checkbox" name="idType" value="Carte consulaire" id="cons" {{ old('idType') == 'Carte consulaire' ? 'checked' : '' }}>
                         <label for="cons">Carte consulaire</label>
                     </div>
                 </div>
+                @error('idType')
+                    <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="form-group">
                 <label><i class="bi bi-file-text"></i> Numéro CNI / Passeport</label>
-                <input type="text" name="idNumber" required placeholder="Numéro d'identification">
+                <input type="text" name="idNumber" required placeholder="Numéro d'identification" class="@error('idNumber') is-invalid @enderror" value="{{ old('idNumber') }}">
+                @error('idNumber')
+                    <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="form-group">
                 <label>Téléverser la CNI/Passeport</label>
-                <div class="file-upload-area" onclick="document.getElementById('fileInput').click()">
+                <div class="file-upload-area @error('idFile') is-invalid @enderror" onclick="document.getElementById('fileInput').click()">
                     <div class="file-upload-icon"><i class="bi bi-cloud-upload"></i></div>
                     <div class="file-upload-text">
                         Joindre un document en PDF, JPG, PNG<br>
                         (Taille maximale 10 Mo)
                     </div>
                 </div>
-                <input type="file" id="fileInput" name="idFile" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="updateFileName(this)">
+                <input type="file" id="fileInput" name="idFile" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="updateFileName(this)" class="@error('idFile') is-invalid @enderror">
                 <div id="fileName" style="margin-top: 10px; font-size: 13px; color: #27ae60;"></div>
+                @error('idFile')
+                    <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="form-group">
                 <label>Programme</label>
-                <select name="program" required>
+                <select name="program" required class="@error('program') is-invalid @enderror">
                     <option value="">-- Sélectionnez un programme --</option>
                     @foreach($projets as $projet)
                         <option value="{{ $projet->id }}" 
@@ -627,11 +675,15 @@
                                 data-prix-villa="{{ $projet->prix_villa }}"
                                 data-prix-appartement="{{ $projet->prix_appartement }}"
                                 data-pourcentage-apport="{{ $projet->pourcentage_apport }}"
-                                data-frais-souscription="{{ $projet->frais_souscription }}">
+                                data-frais-souscription="{{ $projet->frais_souscription }}"
+                                {{ old('program') == $projet->id ? 'selected' : '' }}>
                             {{ $projet->nom }}
                         </option>
                     @endforeach
                 </select>
+                @error('program')
+                    <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="form-group">
@@ -639,11 +691,17 @@
                 <div class="form-row">
                     <div>
                         <label style="font-size: 12px; color: #888;"><i class="bi bi-calendar"></i> Date de début</label>
-                        <input type="date" name="startDate" required>
+                        <input type="date" name="startDate" required class="@error('startDate') is-invalid @enderror" value="{{ old('startDate') }}">
+                        @error('startDate')
+                            <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                        @enderror
                     </div>
                     <div>
                         <label style="font-size: 12px; color: #888;"><i class="bi bi-calendar"></i> Date de fin</label>
-                        <input type="date" name="endDate" required>
+                        <input type="date" name="endDate" required class="@error('endDate') is-invalid @enderror" value="{{ old('endDate') }}">
+                        @error('endDate')
+                            <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                        @enderror
                     </div>
                 </div>
             </div>
@@ -660,69 +718,60 @@
 
             <div class="form-group">
                 <label>Types de logement :</label>
-                <div class="housing-options">
-                    <div class="option-card" onclick="selectOption(this, 'housingType', 'Villa basse 3 pièces')">
-                        <div class="option-checkbox"></div>
-                        <span>Villa basse 3 pièces</span>
-                    </div>
-                    <div class="option-card" onclick="selectOption(this, 'housingType', 'Villa duplex 4 pièces')">
-                        <div class="option-checkbox"></div>
-                        <span>Villa duplex 4 pièces</span>
-                    </div>
-                    <div class="option-card" onclick="selectOption(this, 'housingType', 'Appartement 3 pièces')">
-                        <div class="option-checkbox"></div>
-                        <span>Appartement 3 pièces</span>
-                    </div>
-                    <div class="option-card" onclick="selectOption(this, 'housingType', 'Appartement 4 pièces')">
-                        <div class="option-checkbox"></div>
-                        <span>Appartement 4 pièces</span>
-                    </div>
+                <div class="housing-options @error('housingType') is-invalid @enderror" id="housingOptionsContainer">
+                    <!-- Les options seront chargées dynamiquement -->
                 </div>
-                <input type="hidden" name="housingType" id="housingType" required>
+                <input type="hidden" name="housingType" id="housingType" required class="@error('housingType') is-invalid @enderror" value="{{ old('housingType') }}">
+                @error('housingType')
+                    <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="form-group">
                 <label>Mode paiement</label>
-                <div class="payment-options">
-                    <div class="option-card" onclick="selectOption(this, 'paymentMode', 'Crédit bancaire')">
+                <div class="payment-options @error('paymentMode') is-invalid @enderror">
+                    <div class="option-card" onclick="selectOption(this, 'paymentMode', 'ESPECES')">
                         <div class="option-checkbox"></div>
-                        <span>Crédit bancaire</span>
+                        <span>ESPECES</span>
                     </div>
-                    <div class="option-card" onclick="selectOption(this, 'paymentMode', 'Tempérament')">
+                    <div class="option-card" onclick="selectOption(this, 'paymentMode', 'VIREMENT')">
                         <div class="option-checkbox"></div>
-                        <span>Tempérament</span>
+                        <span>VIREMENT</span>
                     </div>
-                    <div class="option-card" onclick="selectOption(this, 'paymentMode', 'Cash')">
+                    <div class="option-card" onclick="selectOption(this, 'paymentMode', 'MOBILE_MONEY')">
                         <div class="option-checkbox"></div>
-                        <span>Cash</span>
+                        <span>MOBILE_MONEY</span>
                     </div>
-                    <div class="option-card" onclick="selectOption(this, 'paymentMode', 'Prélèvement à la source')">
+                    <div class="option-card" onclick="selectOption(this, 'paymentMode', 'TEMPERAMENT')">
                         <div class="option-checkbox"></div>
-                        <span>Prélèvement à la source</span>
+                        <span>TEMPERAMENT</span>
                     </div>
-                    <div class="option-card" onclick="selectOption(this, 'paymentMode', 'Virement')">
+                    <div class="option-card" onclick="selectOption(this, 'paymentMode', 'CREDIT_BANCAIRE')">
                         <div class="option-checkbox"></div>
-                        <span>Virement</span>
+                        <span>CREDIT_BANCAIRE</span>
                     </div>
                 </div>
-                <input type="hidden" name="paymentMode" id="paymentMode" required>
+                <input type="hidden" name="paymentMode" id="paymentMode" required class="@error('paymentMode') is-invalid @enderror" value="{{ old('paymentMode') }}">
+                @error('paymentMode')
+                    <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="summary-box">
-                <h4>💰 Valeur de la souscription : <span id="valeurSouscription">30 000 000</span> FCFA</h4>
+                <h4>💰 Valeur de la souscription : <span id="valeurSouscription">-</span> FCFA</h4>
                 <div class="summary-line">
-                    <span>Apport initial (<span id="pourcentageApport">10</span>%)</span>
-                    <strong><span id="apportInitial">3 000 000</span> FCFA</strong>
+                    <span>Apport initial (<span id="pourcentageApport">-</span>%)</span>
+                    <strong><span id="apportInitial">-</span> FCFA</strong>
                 </div>
             </div>
 
             <div class="warning-box">
-                ⚠️ Les frais de souscription s'élèvent à <span id="fraisSouscription">500 000</span> FCFA (non remboursables)
+                ⚠️ Les frais de souscription s'élèvent à <span id="fraisSouscription">-</span> FCFA (non remboursables)
             </div>
             
-            <input type="hidden" name="valeur_souscription" id="valeur_souscription_input" value="30000000">
-            <input type="hidden" name="apport_initial" id="apport_initial_input" value="3000000">
-            <input type="hidden" name="frais_souscription" id="frais_souscription_input" value="500000">
+            <input type="hidden" name="valeur_souscription" id="valeur_souscription_input" value="{{ old('valeur_souscription', '30000000') }}">
+            <input type="hidden" name="apport_initial" id="apport_initial_input" value="{{ old('apport_initial', '3000000') }}">
+            <input type="hidden" name="frais_souscription" id="frais_souscription_input" value="{{ old('frais_souscription', '500000') }}">
 
             <div class="buttons">
                 <button type="button" class="btn-secondary" onclick="prevStep()">Retour</button>
@@ -739,10 +788,13 @@
             </div>
 
             <div class="form-group">
-                <div class="checkbox-item">
-                    <input type="checkbox" id="certify" required>
+                <div class="checkbox-item @error('certify') is-invalid @enderror">
+                    <input type="checkbox" id="certify" name="certify" required class="@error('certify') is-invalid @enderror" {{ old('certify') ? 'checked' : '' }}>
                     <label for="certify">Je certifie que les informations fournies sont exactes et l'autorise leur traitement</label>
                 </div>
+                @error('certify')
+                    <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="buttons">
@@ -754,11 +806,10 @@
     </form>
 
     <!-- Écran de succès -->
-    <div class="success-screen" id="successScreen">
+    <div class="success-screen {{ session('success') ? 'active' : '' }}" id="successScreen">
         <div class="success-icon"><i class="bi bi-check-circle"></i></div>
-        <h3>Votre souscription a été enregistrée avec succès</h3>
-        <p>La souscription a été soumise pour validation.</p>
-        <button type="button" class="btn-primary" onclick="window.location.href='{{ route('operateur.dashboard') }}'">Retour au tableau de bord</button>
+        <h3>Votre souscription a été soumise à la comptabilité</h3>
+        <button type="button" class="btn-primary" onclick="window.location.href='{{ route('operateur.dashboard') }}'">Retour à la page d’accueil</button>
     </div>
 
 </div>
@@ -766,6 +817,7 @@
 <script>
     let currentStep = 0;
     const totalSteps = 5;
+    const biensImmobiliers = @json($biensImmobiliers);
 
     function updateProgress() {
         const progress = ((currentStep + 1) / totalSteps) * 100;
@@ -863,6 +915,71 @@
     // Initialize
     showStep(0);
     
+    // Restaurer les valeurs sélectionnées après une erreur de validation
+    document.addEventListener('DOMContentLoaded', function() {
+        // Restaurer la catégorie sélectionnée
+        const clientCategory = document.getElementById('clientCategory').value;
+        if (clientCategory) {
+            document.querySelectorAll('.category-card').forEach(card => {
+                if (card.textContent.includes(clientCategory)) {
+                    card.classList.add('selected');
+                    document.getElementById('continueCategory').disabled = false;
+                }
+            });
+        }
+        
+        // Restaurer le mode de paiement sélectionné
+        const paymentMode = document.getElementById('paymentMode').value;
+        if (paymentMode) {
+            document.querySelectorAll('.payment-options .option-card').forEach(card => {
+                if (card.textContent.includes(paymentMode)) {
+                    card.classList.add('selected');
+                }
+            });
+        }
+        
+        // Restaurer le type de logement sélectionné
+        const housingType = document.getElementById('housingType').value;
+        if (housingType) {
+            // Attendre que les biens soient chargés puis restaurer la sélection
+            setTimeout(function() {
+                const programmeSelect = document.querySelector('select[name="program"]');
+                if (programmeSelect && programmeSelect.value) {
+                    chargerBiensImmobiliers();
+                    // Attendre un peu plus pour que les options soient créées
+                    setTimeout(function() {
+                        const housingOptions = document.querySelectorAll('.housing-options .option-card');
+                        housingOptions.forEach(card => {
+                            const cardText = card.textContent;
+                            if (housingType.includes('|')) {
+                                const [bienId, bienNom] = housingType.split('|');
+                                if (cardText.includes(bienNom)) {
+                                    card.classList.add('selected');
+                                }
+                            }
+                        });
+                    }, 500);
+                }
+            }, 100);
+        }
+        
+        // Restaurer l'étape active en cas d'erreur
+        const errors = document.querySelectorAll('.is-invalid');
+        if (errors.length > 0) {
+            // Trouver la première erreur et aller à l'étape correspondante
+            const firstError = errors[0];
+            const stepElement = firstError.closest('.step');
+            if (stepElement) {
+                const stepId = stepElement.id;
+                const stepNumber = parseInt(stepId.replace('step', ''));
+                if (!isNaN(stepNumber)) {
+                    currentStep = stepNumber;
+                    showStep(currentStep);
+                }
+            }
+        }
+    });
+    
     // Fonction pour formater les montants en FCFA
     function formatMontant(montant) {
         return new Intl.NumberFormat('fr-FR').format(montant);
@@ -871,40 +988,25 @@
     // Fonction pour calculer les valeurs dynamiquement
     function calculerValeursSouscription() {
         const programmeSelect = document.querySelector('select[name="program"]');
-        const typeLogement = document.getElementById('housingType').value;
+        const housingTypeValue = document.getElementById('housingType').value;
         
-        if (!programmeSelect.value || !typeLogement) {
+        if (!programmeSelect.value || !housingTypeValue) {
             return; // Pas assez d'informations pour calculer
         }
         
-        const programme = programmeSelect.options[programmeSelect.selectedIndex];
-        const prixTerrain = parseFloat(programme.getAttribute('data-prix-terrain')) || 0;
-        const prixDuplex = parseFloat(programme.getAttribute('data-prix-duplex')) || 0;
-        const prixVilla = parseFloat(programme.getAttribute('data-prix-villa')) || 0;
-        const prixAppartement = parseFloat(programme.getAttribute('data-prix-appartement')) || 0;
-        const pourcentageApport = parseFloat(programme.getAttribute('data-pourcentage-apport')) || 10;
-        const fraisSouscription = parseFloat(programme.getAttribute('data-frais-souscription')) || 500000;
+        // Extraire l'ID du bien immobilier de la valeur
+        const [bienId, bienNom] = housingTypeValue.split('|');
+        const projetId = programmeSelect.value;
         
-        let valeurSouscription = 0;
+        // Trouver le bien immobilier dans le tableau
+        const biens = biensImmobiliers[projetId] || [];
+        const bien = biens.find(b => b.id == bienId);
         
-        // Déterminer la valeur selon le type de logement
-        switch(typeLogement) {
-            case 'Villa basse 3 pièces':
-                valeurSouscription = prixVilla;
-                break;
-            case 'Villa duplex 4 pièces':
-                valeurSouscription = prixDuplex;
-                break;
-            case 'Appartement 3 pièces':
-            case 'Appartement 4 pièces':
-                valeurSouscription = prixAppartement;
-                break;
-            default:
-                valeurSouscription = prixTerrain; // Par défaut
-        }
-        
-        if (valeurSouscription > 0) {
-            const apportInitial = Math.round(valeurSouscription * (pourcentageApport / 100));
+        if (bien && bien.prix) {
+            const valeurSouscription = bien.prix;
+            const pourcentageApport = parseFloat(bien.pourcentage_apport) || 10;
+            const fraisSouscription = parseFloat(bien.frais_souscription) || 500000;
+            const apportInitial = parseFloat(bien.apport_initial) || Math.round(valeurSouscription * (pourcentageApport / 100));
             
             // Mettre à jour l'affichage
             document.getElementById('valeurSouscription').textContent = formatMontant(valeurSouscription);
@@ -919,21 +1021,80 @@
         }
     }
     
+    // Charger les biens immobiliers selon le programme sélectionné
+    function chargerBiensImmobiliers() {
+        const programmeSelect = document.querySelector('select[name="program"]');
+        const housingContainer = document.getElementById('housingOptionsContainer');
+        const housingTypeInput = document.getElementById('housingType');
+        
+        if (!programmeSelect.value || !housingContainer) {
+            return;
+        }
+        
+        const projetId = programmeSelect.value;
+        const biens = biensImmobiliers[projetId] || [];
+        
+        // Vider le conteneur
+        housingContainer.innerHTML = '';
+        housingTypeInput.value = '';
+        
+        if (biens.length === 0) {
+            housingContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Aucun bien immobilier disponible pour ce programme</div>';
+            return;
+        }
+        
+        // Créer les options pour chaque bien immobilier
+        biens.forEach(function(bien) {
+            const optionCard = document.createElement('div');
+            optionCard.className = 'option-card';
+            optionCard.onclick = function() {
+                selectOption(this, 'housingType', bien.id + '|' + bien.titre);
+                calculerValeursSouscription();
+            };
+            
+            optionCard.innerHTML = `
+                <div class="option-checkbox"></div>
+                <span>${bien.titre}</span>
+                <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                    Prix: ${formatMontant(bien.prix)} FCFA
+                </div>
+            `;
+            
+            housingContainer.appendChild(optionCard);
+        });
+    }
+    
     // Écouter les changements de programme et de type de logement
     document.addEventListener('DOMContentLoaded', function() {
         const programmeSelect = document.querySelector('select[name="program"]');
-        const typeLogementInputs = document.querySelectorAll('.housing-options .option-card');
         
         if (programmeSelect) {
-            programmeSelect.addEventListener('change', calculerValeursSouscription);
+            programmeSelect.addEventListener('change', function() {
+                chargerBiensImmobiliers();
+                calculerValeursSouscription();
+            });
         }
         
-        // Écouter les changements de type de logement
-        typeLogementInputs.forEach(card => {
-            card.addEventListener('click', function() {
-                setTimeout(calculerValeursSouscription, 100); // Petit délai pour laisser le DOM se mettre à jour
-            });
-        });
+            // Charger les biens initiaux si un programme est déjà sélectionné
+        if (programmeSelect && programmeSelect.value) {
+            chargerBiensImmobiliers();
+            // Restaurer la sélection du logement après le chargement
+            setTimeout(function() {
+                const housingType = document.getElementById('housingType').value;
+                if (housingType) {
+                    const housingOptions = document.querySelectorAll('.housing-options .option-card');
+                    housingOptions.forEach(card => {
+                        const cardText = card.textContent;
+                        if (housingType.includes('|')) {
+                            const [bienId, bienTitre] = housingType.split('|');
+                            if (cardText.includes(bienTitre)) {
+                                card.classList.add('selected');
+                            }
+                        }
+                    });
+                }
+            }, 1000);
+        }
     });
 </script>
 
