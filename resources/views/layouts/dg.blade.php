@@ -641,6 +641,13 @@
                 </a>
             </li>
 
+            <li class="nav-item">
+                <a href="{{ route('dg.suivi-paiements-projet') }}" class="nav-link {{ request()->routeIs('dg.suivi-paiements-projet') ? 'active' : '' }}">
+                    <i class="fas fa-money-check-alt"></i>
+                    <span>Suivi paiements projet</span>
+                </a>
+            </li>
+
             <!-- Nouveaux onglets -->
             <li class="nav-item">
                 <a href="{{ route('dg.attribution.index') }}" class="nav-link {{ request()->routeIs('dg.attribution.*') ? 'active' : '' }}">

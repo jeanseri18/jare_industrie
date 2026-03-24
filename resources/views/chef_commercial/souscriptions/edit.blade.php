@@ -281,7 +281,7 @@
                     @php $apportPayeVal = old('apport_initial_paye_par_client', $souscription->apport_initial_paye_par_client ?? true) ? '1' : '0'; @endphp
                     <input type="hidden" name="apport_initial_paye_par_client" value="0">
                     <input type="checkbox" id="apport_initial_paye_par_client" name="apport_initial_paye_par_client" value="1" {{ $apportPayeVal === '1' ? 'checked' : '' }}>
-                    <label for="apport_initial_paye_par_client">Apport initial payé par le client</label>
+                    <label for="apport_initial_paye_par_client">Apport initial à payer par le client</label>
                 </div>
             </div>
             <input type="hidden" name="valeur_souscription" id="valeur_souscription_input" value="{{ old('valeur_souscription', $souscription->prix_logement) }}">
@@ -440,7 +440,7 @@
         if (String(cat).toLowerCase() === 'association syndicat mutuelle') {
             orgLine = `<div class="recap-item"><strong>Organisation:</strong> ${data.get('organisation_type') || '-'}</div>`;
         }
-        if ((data.get('organisation_type') || '').toLowerCase() === 'mutuelle') {
+        if ((data.get('organisation_type') || '').toLowerCase() === 'mutuelle' || String(cat).toLowerCase() === 'mutuelle') {
             const mutSel = document.getElementById('mutuelleSelect');
             const mutText = (mutSel && mutSel.selectedIndex > 0) ? mutSel.options[mutSel.selectedIndex].text : '-';
             mutuelleLine = `<div class="recap-item"><strong>Mutuelle:</strong> ${mutText}</div>`;
@@ -454,7 +454,7 @@
             <div class="recap-item"><strong>Tél:</strong> ${data.get('phone')}</div>
             <div class="recap-item"><strong>Logement:</strong> ${logement}</div>
             <div class="recap-item"><strong>Prix:</strong> ${formatMontant(data.get('valeur_souscription'))} FCFA</div>
-            <div class="recap-item"><strong>Apport initial payé:</strong> ${String(data.get('apport_initial_paye_par_client') || '0') === '1' ? 'Oui' : 'Non'}</div>
+            <div class="recap-item"><strong>Apport initial à payer:</strong> ${String(data.get('apport_initial_paye_par_client') || '0') === '1' ? 'Oui' : 'Non'}</div>
             <div class="recap-item"><strong>Apport initial:</strong> ${formatMontant(data.get('apport_initial') || 0)} FCFA</div>
             <div class="recap-item"><strong>Frais souscription:</strong> ${formatMontant(data.get('frais_souscription') || 0)} FCFA</div>
         `;

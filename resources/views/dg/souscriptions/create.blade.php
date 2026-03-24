@@ -880,7 +880,7 @@
                 <div class="checkbox-item">
                     <input type="hidden" name="apport_initial_paye_par_client" value="0">
                     <input type="checkbox" id="apport_initial_paye_par_client" name="apport_initial_paye_par_client" value="1" {{ old('apport_initial_paye_par_client', '1') ? 'checked' : '' }}>
-                    <label for="apport_initial_paye_par_client">Apport initial payé par le client</label>
+                    <label for="apport_initial_paye_par_client">Apport initial à payer par le client</label>
                 </div>
             </div>
             
@@ -1202,7 +1202,9 @@
         if ((fd.get('clientCategory') || '').toLowerCase() === 'association syndicat mutuelle') {
             html += '<div class="recap-item"><strong>Organisation:</strong> ' + (fd.get('organisation_type') || '-') + '</div>';
         }
-        if ((fd.get('organisation_type') || '').toLowerCase() === 'mutuelle') {
+        const catLower = (fd.get('clientCategory') || '').toLowerCase();
+        const orgLower = (fd.get('organisation_type') || '').toLowerCase();
+        if (orgLower === 'mutuelle' || catLower === 'mutuelle') {
             html += '<div class="recap-item"><strong>Mutuelle:</strong> ' + mutText + '</div>';
         }
         html += '<div class="recap-item"><strong>Programme:</strong> ' + programText + '</div>';
@@ -1213,7 +1215,7 @@
         html += '<div class="recap-item"><strong>Type de logement:</strong> ' + housingTypeLabel + '</div>';
         html += '<div class="recap-item"><strong>Mode de paiement:</strong> ' + (fd.get('paymentMode') || '-') + '</div>';
         html += '<div class="recap-item"><strong>Valeur de la souscription:</strong> ' + valeurSous + ' FCFA</div>';
-        html += '<div class="recap-item"><strong>Apport initial payé:</strong> ' + ((fd.get('apport_initial_paye_par_client') || '0') === '1' ? 'Oui' : 'Non') + '</div>';
+        html += '<div class="recap-item"><strong>Apport initial à payer:</strong> ' + ((fd.get('apport_initial_paye_par_client') || '0') === '1' ? 'Oui' : 'Non') + '</div>';
         html += '<div class="recap-item"><strong>Apport initial:</strong> ' + apportInit + ' FCFA</div>';
         html += '<div class="recap-item"><strong>Frais de souscription:</strong> ' + fraisSous + ' FCFA [non remboursables]</div>';
 

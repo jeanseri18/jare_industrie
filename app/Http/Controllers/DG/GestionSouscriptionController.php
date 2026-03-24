@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\DG;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\Souscription;
 use App\Models\ApportInitial;
 
@@ -51,5 +53,71 @@ class GestionSouscriptionController extends Controller
     {
         $souscription->load(['client', 'projet', 'attributionLot']);
         return view('dg.attribution.show', compact('souscription'));
+    }
+
+    public function suiviPaiementsProjet(Request $request)
+    {
+        $query = Souscription::with(['client', 'projet', 'paiements']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('ref_souscription', 'like', "%{$search}%")
+                    ->orWhereHas('client', function ($q) use ($search) {
+                        $q->where('nom_prenom', 'like', "%{$search}%")
+                            ->orWhere('ref_client', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('projet', function ($q) use ($search) {
+                        $q->where('nom', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($request->filled('projet')) {
+            $query->where('programme', $request->projet);
+        }
+
+        if ($request->filled('mode_paiement')) {
+            $query->where('mode_paiement', $request->mode_paiement);
+        }
+
+        if ($request->filled('date_debut')) {
+            $query->whereDate('created_at', '>=', $request->date_debut);
+        }
+        if ($request->filled('date_fin')) {
+            $query->whereDate('created_at', '<=', $request->date_fin);
+        }
+
+        if ($request->filled('statut')) {
+            switch ($request->statut) {
+                case 'en_attente':
+                    $query->whereHas('paiements', function ($q) {
+                        $q->where('statut', 'en_attente');
+                    });
+                    break;
+                case 'en_cours':
+                    $query->whereHas('paiements', function ($q) {
+                        $q->where('statut', 'payé');
+                    })->whereColumn('prix_logement', '>', DB::raw('(select coalesce(sum(montant),0) from paiements where paiements.dossier_id = souscriptions.id and paiements.statut = "payé")'));
+                    break;
+                case 'regle':
+                case 'payé':
+                    $query->whereHas('paiements', function ($q) {
+                        $q->where('statut', 'payé');
+                    })->whereColumn('prix_logement', '<=', DB::raw('(select coalesce(sum(montant),0) from paiements where paiements.dossier_id = souscriptions.id and paiements.statut = "payé")'));
+                    break;
+                case 'annule':
+                case 'annulé':
+                    $query->whereHas('paiements', function ($q) {
+                        $q->where('statut', 'annulé');
+                    });
+                    break;
+            }
+        }
+
+        $souscriptions = $query->latest()->paginate(20);
+        $projets = \App\Models\Projet::all();
+
+        return view('dg.suivi-paiements-projet', compact('souscriptions', 'projets'));
     }
 }

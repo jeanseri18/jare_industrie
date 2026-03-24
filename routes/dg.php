@@ -76,6 +76,9 @@ Route::get('attribution/{souscription}', [\App\Http\Controllers\DG\GestionSouscr
 Route::get('confirmation', [\App\Http\Controllers\DG\GestionSouscriptionController::class, 'confirmationIndex'])
     ->name('confirmation.index');
 
+Route::get('suivi-paiements-projet', [\App\Http\Controllers\DG\GestionSouscriptionController::class, 'suiviPaiementsProjet'])
+    ->name('suivi-paiements-projet');
+
 // Suivi des équipes (activation de compte)
 Route::get('equipes', [EquipeController::class, 'index'])->name('equipes.index');
 Route::get('equipes/create', [EquipeController::class, 'create'])->name('equipes.create');

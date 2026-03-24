@@ -675,7 +675,7 @@
                 <div class="checkbox-item">
                     <input type="hidden" name="apport_initial_paye_par_client" value="0">
                     <input type="checkbox" id="apport_initial_paye_par_client" name="apport_initial_paye_par_client" value="1" {{ old('apport_initial_paye_par_client', '1') ? 'checked' : '' }}>
-                    <label for="apport_initial_paye_par_client">Apport initial payé par le client</label>
+                    <label for="apport_initial_paye_par_client">Apport initial à payer par le client</label>
                 </div>
             </div>
 
@@ -928,7 +928,9 @@
         if ((data.get('clientCategory') || '').toLowerCase() === 'association syndicat mutuelle') {
             html += `<div class="recap-item"><strong>Organisation:</strong> ${data.get('organisation_type') || '-'}</div>`;
         }
-        if ((data.get('organisation_type') || '').toLowerCase() === 'mutuelle') {
+        const catLower = (data.get('clientCategory') || '').toLowerCase();
+        const orgLower = (data.get('organisation_type') || '').toLowerCase();
+        if (orgLower === 'mutuelle' || catLower === 'mutuelle') {
             const mutSel = document.getElementById('mutuelleSelect');
             const mutText = (mutSel && mutSel.selectedIndex > 0) ? mutSel.options[mutSel.selectedIndex].text : '-';
             html += `<div class="recap-item"><strong>Mutuelle:</strong> ${mutText}</div>`;
