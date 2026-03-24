@@ -40,11 +40,30 @@ class DashboardController extends Controller
             ->get();
 
         // Utilisateurs par rôle
-        $usersByRole = User::where('role', '!=', 'client')
-            ->selectRaw('role, COUNT(*) as count')
+        $roleOrder = [
+            User::ROLE_DG,
+            User::ROLE_ADMIN_TECHNIQUE,
+            User::ROLE_OPERATEUR,
+            User::ROLE_COMPTABLE,
+            User::ROLE_CHEF_COMMERCIAL,
+            User::ROLE_CLIENT,
+        ];
+
+        $roleCounts = User::selectRaw('COALESCE(role, ?) as role, COUNT(*) as count', [User::ROLE_CLIENT])
             ->groupBy('role')
             ->pluck('count', 'role')
             ->toArray();
+
+        $usersByRole = [];
+        foreach ($roleOrder as $role) {
+            $usersByRole[$role] = (int) ($roleCounts[$role] ?? 0);
+        }
+
+        foreach ($roleCounts as $role => $count) {
+            if (!array_key_exists($role, $usersByRole)) {
+                $usersByRole[$role] = (int) $count;
+            }
+        }
 
         // Statistiques mensuelles
         $monthlyStats = $this->getMonthlyStats();

@@ -31,6 +31,19 @@
                 
                 <div class="col-md-6">
                     <div class="mb-3">
+                        <label for="numero_agrement" class="form-label">Numéro d’agrément</label>
+                        <input type="text" class="form-control @error('numero_agrement') is-invalid @enderror"
+                               id="numero_agrement" name="numero_agrement" value="{{ old('numero_agrement') }}">
+                        @error('numero_agrement')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
                         <label for="localisation" class="form-label">Localisation</label>
                         <input type="text" class="form-control @error('localisation') is-invalid @enderror" 
                                id="localisation" name="localisation" value="{{ old('localisation') }}">
@@ -39,8 +52,6 @@
                         @enderror
                     </div>
                 </div>
-            
-            <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="superficie" class="form-label">Superficie (m²)</label>
@@ -51,6 +62,9 @@
                         @enderror
                     </div>
                 </div>
+            </div>
+            
+            <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="nb_logements" class="form-label">Nombre de Logements</label>

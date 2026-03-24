@@ -97,6 +97,7 @@
                         </h5>
                     </div><div>
                         <div class="btn-group" role="group" aria-label="Filtre Statut">
+                            <a class="btn {{ !request('statut') ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('comptable.frais-dossier', array_filter(['search' => request('search'), 'date_debut' => request('date_debut'), 'date_fin' => request('date_fin')])) }}">Tous</a>
                             <a class="btn {{ request('statut') === 'en_attente' ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('comptable.frais-dossier', array_filter(['search' => request('search'), 'date_debut' => request('date_debut'), 'date_fin' => request('date_fin'), 'statut' => 'en_attente'])) }}">En attente</a>
                             <a class="btn {{ request('statut') === 'en_cours' ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('comptable.frais-dossier', array_filter(['search' => request('search'), 'date_debut' => request('date_debut'), 'date_fin' => request('date_fin'), 'statut' => 'en_cours'])) }}">En cours</a>
                             <a class="btn {{ in_array(request('statut'), ['regle','payé']) ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('comptable.frais-dossier', array_filter(['search' => request('search'), 'date_debut' => request('date_debut'), 'date_fin' => request('date_fin'), 'statut' => 'regle'])) }}">Réglé</a>
@@ -137,9 +138,14 @@
                                 <td>{{ number_format($montantRestant, 0, ',', ' ') }} FCFA</td>
                                 <td>
                                     <div class="btn-group">
-                                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#validerModal{{ $paiement->id }}" title="Enregistrer un paiement">
-                                            <i class="fas fa-money-bill"></i> Payer
-                                        </button>
+                                        <a href="{{ route('comptable.paiements.souscription', ['souscription' => $souscription, 'type' => 'FRAIS_DOSSIER']) }}" class="btn btn-sm btn-info" title="Voir l'historique des paiements">
+                                            <i class="fas fa-history"></i>
+                                        </a>
+                                        @if($montantRestant > 0)
+                                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#validerModal{{ $paiement->id }}" title="Enregistrer un paiement">
+                                                <i class="fas fa-money-bill"></i> Payer
+                                            </button>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -176,7 +182,7 @@
                         <p><strong>Client:</strong> {{ $paiement->souscription->client->nom_prenom ?? 'N/A' }}</p>
                         <p><strong>Montant restant:</strong> {{ number_format($paiement->montant_reste ?? 0, 0, ',', ' ') }} FCFA</p>
                         <p><strong>Montant à payer:</strong></p>
-                        <input type="number" name="montant" class="form-control" min="1" step="1" placeholder="Saisir le montant" required>
+                    <input type="number" name="montant" class="form-control" min="1" step="1" placeholder="Saisir le montant" required>
                     </div>
                     <div class="form-group mt-3">
                         <label for="mode{{ $paiement->id }}">Mode de paiement</label>
@@ -184,7 +190,7 @@
                             <option value="">Sélectionner le mode</option>
                             <option value="ESPECES">ESPECES</option>
                             <option value="VIREMENT">VIREMENT</option>
-                            <option value="MOBILE_MONEY">MOBILE_MONEY</option>
+                            <option value="PRELEVEMENT_SOURCE">PRÉLÈVEMENT À LA SOURCE</option>
                             <option value="TEMPERAMENT">TEMPERAMENT</option>
                             <option value="CREDIT_BANCAIRE">CREDIT_BANCAIRE</option>
                         </select>
@@ -252,6 +258,15 @@
         }
       });
     });
+
+    const receiptUrl = @json(session('receipt_url'));
+    if (receiptUrl) {
+      const key = 'opened_receipt_' + receiptUrl;
+      if (!sessionStorage.getItem(key)) {
+        window.open(receiptUrl, '_blank');
+        sessionStorage.setItem(key, '1');
+      }
+    }
   });
 })();
 </script>

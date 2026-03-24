@@ -6,7 +6,7 @@ use App\Http\Controllers\Client\ClientController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\HistoryController as AdminHistoryController;
-use App\Http\Controllers\Admin\BackupController as AdminBackupController;
+use App\Http\Controllers\Admin\ClientController as AdminClientController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -27,14 +27,35 @@ Route::prefix('client')->name('client.')->group(function () {
         
         // Dashboard client
         Route::get('/dashboard', [ClientController::class, 'dashboard'])->name('dashboard');
+        
+        // Historique des paiements
+        Route::get('/historique', [ClientController::class, 'historique'])->name('historique');
+        
+        // Mes souscriptions
+        Route::get('/mes-souscriptions', [ClientController::class, 'souscriptions'])->name('souscriptions');
+        
+        // Mes documents
+        Route::get('/mes-documents', [ClientController::class, 'documents'])->name('documents');
+        
+        // Notifications
+        Route::get('/notifications', [ClientController::class, 'notifications'])->name('notifications');
+        
+        // Profil
+        Route::get('/profile', [ClientController::class, 'profile'])->name('profile');
+        Route::put('/profile', [ClientController::class, 'updateProfile'])->name('profile.update');
+        Route::put('/password', [ClientController::class, 'updatePassword'])->name('password.update');
     });
+});
+
+// Routes partagées pour tout le staff
+Route::middleware(['auth'])->group(function () {
+    Route::get('/mon-profil', [App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
+    Route::put('/mon-profil/password', [App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password.update');
 });
 
 // Routes pour DG
 Route::prefix('dg')->name('dg.')->middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dg.dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [App\Http\Controllers\DG\DashboardController::class, 'index'])->name('dashboard');
     
     // Inclure les routes DG
     require __DIR__.'/dg.php';
@@ -55,6 +76,9 @@ Route::prefix('chef_commercial')->name('chef_commercial.')->middleware('auth')->
     Route::get('/souscriptions/corrigees', [\App\Http\Controllers\ChefCommercial\ChefCommercialController::class, 'corrigees'])
         ->name('souscriptions.corrigees');
 
+    Route::get('/souscriptions/corrige', [\App\Http\Controllers\ChefCommercial\ChefCommercialController::class, 'corrige'])
+        ->name('souscriptions.corrige');
+
     // Nouvelle souscription (contrôleur)
     Route::get('/souscriptions/create', [\App\Http\Controllers\ChefCommercial\ChefCommercialController::class, 'create'])
         ->name('souscriptions.create');
@@ -62,6 +86,10 @@ Route::prefix('chef_commercial')->name('chef_commercial.')->middleware('auth')->
     // Enregistrer souscription (contrôleur)
     Route::post('/souscriptions', [\App\Http\Controllers\ChefCommercial\ChefCommercialController::class, 'store'])
         ->name('souscriptions.store');
+    Route::get('/souscriptions/{souscription}/fiche-souscription', [\App\Http\Controllers\SouscriptionController::class, 'downloadFicheSouscription'])
+        ->name('souscriptions.fiche-souscription');
+    Route::post('/souscriptions/{souscription}/fiche-souscription/envoyer', [\App\Http\Controllers\SouscriptionController::class, 'sendFicheSouscription'])
+        ->name('souscriptions.fiche-souscription.send');
 
     // Modifier une souscription (contrôleur)
     Route::get('/souscriptions/{souscription}/edit', [\App\Http\Controllers\ChefCommercial\ChefCommercialController::class, 'edit'])
@@ -82,16 +110,15 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
     Route::put('/users/{user}/password', [AdminUserController::class, 'updatePassword'])->name('users.password.update');
     Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
+
+    // Gestion des clients
+    Route::get('/clients', [AdminClientController::class, 'index'])->name('clients.index');
+    Route::get('/clients/{user}/password', [AdminClientController::class, 'editPassword'])->name('clients.password.edit');
+    Route::put('/clients/{user}/password', [AdminClientController::class, 'updatePassword'])->name('clients.password.update');
     
     // Historique des actions
     Route::get('/history', [AdminHistoryController::class, 'index'])->name('history.index');
     Route::post('/history/clear', [AdminHistoryController::class, 'clear'])->name('history.clear');
-    
-    // Sauvegarde de la base de données
-    Route::get('/backup', [AdminBackupController::class, 'index'])->name('backup.index');
-    Route::post('/backup', [AdminBackupController::class, 'create'])->name('backup.create');
-    Route::get('/backup/{backup}/download', [AdminBackupController::class, 'download'])->name('backup.download');
-    Route::delete('/backup/{backup}', [AdminBackupController::class, 'destroy'])->name('backup.destroy');
 });
 
 // Routes pour Opérateur de saisie
@@ -99,6 +126,10 @@ Route::prefix('operateur')->name('operateur.')->middleware(['auth', 'role:operat
     Route::get('/dashboard', [App\Http\Controllers\Operateur\OperateurController::class, 'dashboard'])->name('dashboard');
     Route::get('/souscriptions/create', [App\Http\Controllers\Operateur\OperateurController::class, 'create'])->name('souscriptions.create');
     Route::post('/souscriptions', [App\Http\Controllers\Operateur\OperateurController::class, 'store'])->name('souscriptions.store');
+    Route::get('/souscriptions/{souscription}/fiche-souscription', [\App\Http\Controllers\SouscriptionController::class, 'downloadFicheSouscription'])
+        ->name('souscriptions.fiche-souscription');
+    Route::post('/souscriptions/{souscription}/fiche-souscription/envoyer', [\App\Http\Controllers\SouscriptionController::class, 'sendFicheSouscription'])
+        ->name('souscriptions.fiche-souscription.send');
 });
 
 // Route de déconnexion générale

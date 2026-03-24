@@ -31,6 +31,9 @@ class User extends Authenticatable
         'role',
         'telephone',
         'adresse',
+        'nom',
+        'prenom',
+        'requires_dg_validation',
     ];
 
     /**
@@ -52,6 +55,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'requires_dg_validation' => 'boolean',
             'password' => 'hashed',
         ];
     }
@@ -90,5 +94,26 @@ class User extends Authenticatable
     public function paiements()
     {
         return $this->hasMany(Paiement::class);
+    }
+
+    // Accesseurs pour nom et prenom
+    public function getNomAttribute()
+    {
+        if (isset($this->attributes['nom'])) {
+            return $this->attributes['nom'];
+        }
+        
+        $nameParts = explode(' ', $this->attributes['name']);
+        return count($nameParts) > 1 ? end($nameParts) : $this->attributes['name'];
+    }
+
+    public function getPrenomAttribute()
+    {
+        if (isset($this->attributes['prenom'])) {
+            return $this->attributes['prenom'];
+        }
+        
+        $nameParts = explode(' ', $this->attributes['name']);
+        return count($nameParts) > 1 ? $nameParts[0] : $this->attributes['name'];
     }
 }

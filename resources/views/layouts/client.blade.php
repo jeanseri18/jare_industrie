@@ -480,22 +480,33 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('client.documents') }}" class="nav-link {{ request()->routeIs('client.documents') ? 'active' : '' }}">
-                            <i class="fas fa-folder"></i>
-                            <span>Documents</span>
+                        <a href="{{ route('client.souscriptions') }}" class="nav-link {{ request()->routeIs('client.souscriptions') ? 'active' : '' }}">
+                            <i class="fas fa-file-contract"></i>
+                            <span>Mes Souscriptions</span>
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('client.paiements') }}" class="nav-link {{ request()->routeIs('client.paiements') ? 'active' : '' }}">
-                            <i class="fas fa-credit-card"></i>
-                            <span>Paiements</span>
+                        <a href="{{ route('client.documents') }}" class="nav-link {{ request()->routeIs('client.documents') ? 'active' : '' }}">
+                            <i class="fas fa-folder-open"></i>
+                            <span>Mes Documents</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('client.historique') }}" class="nav-link {{ request()->routeIs('client.historique') ? 'active' : '' }}">
+                            <i class="fas fa-history"></i>
+                            <span>Historique</span>
                         </a>
                     </li>
                     <li>
                         <a href="{{ route('client.notifications') }}" class="nav-link {{ request()->routeIs('client.notifications') ? 'active' : '' }}" style="position: relative;">
                             <i class="fas fa-bell"></i>
                             <span>Notifications</span>
-                            <span class="notification-badge">3</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('client.profile') }}" class="nav-link {{ request()->routeIs('client.profile') ? 'active' : '' }}">
+                            <i class="fas fa-user"></i>
+                            <span>Mon Profil</span>
                         </a>
                     </li>
                 </ul>
@@ -517,6 +528,10 @@
                         <a href="{{ route('client.profile') }}" class="dropdown-item">
                             <i class="fas fa-user"></i>
                             <span>Mon Profil</span>
+                        </a>
+                        <a href="{{ route('client.dashboard') }}" class="dropdown-item">
+                            <i class="fas fa-home"></i>
+                            <span>Dashboard</span>
                         </a>
                         <a href="#" class="dropdown-item">
                             <i class="fas fa-cog"></i>
@@ -546,23 +561,27 @@
                         <i class="fas fa-home"></i>
                         <span>Accueil</span>
                     </a>
-                    <a href="{{ route('client.documents') }}" class="mobile-nav-link {{ request()->routeIs('client.documents') ? 'active' : '' }}">
-                        <i class="fas fa-folder"></i>
-                        <span>Documents</span>
+                    <a href="{{ route('client.souscriptions') }}" class="mobile-nav-link {{ request()->routeIs('client.souscriptions') ? 'active' : '' }}">
+                        <i class="fas fa-file-contract"></i>
+                        <span>Mes Souscriptions</span>
                     </a>
-                    <a href="{{ route('client.paiements') }}" class="mobile-nav-link {{ request()->routeIs('client.paiements') ? 'active' : '' }}">
-                        <i class="fas fa-credit-card"></i>
-                        <span>Paiements</span>
+                    <a href="{{ route('client.documents') }}" class="mobile-nav-link {{ request()->routeIs('client.documents') ? 'active' : '' }}">
+                        <i class="fas fa-folder-open"></i>
+                        <span>Mes Documents</span>
+                    </a>
+                    <a href="{{ route('client.historique') }}" class="mobile-nav-link {{ request()->routeIs('client.historique') ? 'active' : '' }}">
+                        <i class="fas fa-history"></i>
+                        <span>Historique</span>
                     </a>
                     <a href="{{ route('client.notifications') }}" class="mobile-nav-link {{ request()->routeIs('client.notifications') ? 'active' : '' }}">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
                     </a>
-                    <div class="dropdown-divider"></div>
-                    <a href="{{ route('client.profile') }}" class="mobile-nav-link">
+                    <a href="{{ route('client.profile') }}" class="mobile-nav-link {{ request()->routeIs('client.profile') ? 'active' : '' }}">
                         <i class="fas fa-user"></i>
                         <span>Mon Profil</span>
                     </a>
+                    <div class="dropdown-divider"></div>
                     <form method="POST" action="{{ route('client.logout') }}">
                         @csrf
                         <a href="{{ route('client.logout') }}" class="mobile-nav-link" onclick="event.preventDefault(); this.closest('form').submit();">

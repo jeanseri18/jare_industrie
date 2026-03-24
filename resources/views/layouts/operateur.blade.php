@@ -292,8 +292,12 @@
                     {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                 </div>
                 <div class="dropdown-menu-custom" id="userDropdown">
-                
-
+                    <a href="{{ route('profile.show') }}" class="dropdown-item-custom">
+                        <i class="fas fa-user-circle me-2"></i> Mon Profil
+                    </a>
+                    <a href="{{ route('operateur.dashboard') }}" class="dropdown-item-custom">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
                     <hr style="margin: 0; border-color: #e5e7eb;">
                     <form method="POST" action="{{ route('logout') }}" style="margin: 0;">
                         @csrf

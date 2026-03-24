@@ -52,11 +52,11 @@
             margin: 0;
         }
 
-        .nav-item {
+        .sidebar .nav-item {
             margin: 0;
         }
 
-        .nav-link {
+        .sidebar .nav-link {
             display: flex;
             align-items: center;
             padding: 14px 20px;
@@ -67,13 +67,13 @@
             border-left: 3px solid transparent;
         }
 
-        .nav-link:hover, .nav-link.active {
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
             background: rgba(255, 255, 255, 0.1);
             border-left-color: #4CAF50;
             color: white;
         }
 
-        .nav-link i {
+        .sidebar .nav-link i {
             margin-right: 12px;
             font-size: 18px;
             width: 24px;
@@ -390,19 +390,19 @@
             </li>
 
             <li class="nav-item">
+                <a href="{{ route('admin.clients.index') }}" class="nav-link {{ request()->routeIs('admin.clients.*') ? 'active' : '' }}">
+                    <i class="fas fa-user-tag"></i>
+                    <span>Clients</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
                 <a href="{{ route('admin.history.index') }}" class="nav-link {{ request()->routeIs('admin.history.*') ? 'active' : '' }}">
                     <i class="fas fa-history"></i>
                     <span>Historique des actions</span>
                 </a>
             </li>
-
-            <li class="nav-item">
-                <a href="{{ route('admin.backup.index') }}" class="nav-link {{ request()->routeIs('admin.backup.*') ? 'active' : '' }}">
-                    <i class="fas fa-database"></i>
-                    <span>Sauvegarde de la base de données</span>
-                </a>
-            </li>
-
+          
         </ul>
 
         <div class="sidebar-footer">
@@ -428,8 +428,12 @@
                     {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                 </div>
                 <div class="dropdown-menu-custom" id="userDropdown">
-                
-
+                    <a href="{{ route('profile.show') }}" class="dropdown-item-custom">
+                        <i class="fas fa-user-circle me-2"></i> Mon Profil
+                    </a>
+                    <a href="{{ route('admin.dashboard') }}" class="dropdown-item-custom">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
                     <hr style="margin: 0; border-color: #e5e7eb;">
                     <form method="POST" action="{{ route('logout') }}" style="margin: 0;">
                         @csrf

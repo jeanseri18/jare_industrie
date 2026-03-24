@@ -124,8 +124,8 @@
         </div>
     </div>
 
-    <div class="d-flex justify-content-center">
-        {{ $activities->links() }}
+    <div class="d-flex justify-content-center pb-3">
+        {{ $activities->withQueryString()->onEachSide(1)->links('pagination::bootstrap-5') }}
     </div>
 </div>
 

@@ -69,7 +69,7 @@
                     <label for="role" class="form-label">Rôle</label>
                     <select class="form-select" id="role" name="role" required>
                         <option value="">Sélectionner un rôle</option>
-                        <option value="admin">Administrateur</option>
+                        <option value="admin_technique">Administrateur Technique</option>
                         <option value="dg">Directeur Général</option>
                         <option value="comptable">Comptable</option>
                         <option value="chef_commercial">Chef Commercial</option>

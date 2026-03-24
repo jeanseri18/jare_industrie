@@ -6,17 +6,27 @@ use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\ActivityLog;
 use App\Models\Mutuelle;
+use App\Models\Projet;
+use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ClientController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $clients = Client::latest()
-            ->paginate(10);
-            
-        return view('dg.clients.index', compact('clients'));
+        $query = $this->buildFilteredQuery($request)
+            ->with(['mutuelle', 'lastSouscription.projet']);
+
+        $clients = $query->paginate(10)->withQueryString();
+
+        $projets = Projet::orderBy('nom')->get();
+        $mutuelles = Mutuelle::where('est_active', true)->orderBy('nom')->get();
+
+        return view('dg.clients.index', compact('clients', 'projets', 'mutuelles'));
     }
 
     public function create()
@@ -49,7 +59,7 @@ class ClientController extends Controller
 
         // Enregistrer l'activité
         ActivityLog::create([
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'action' => 'create',
             'description' => "Création du client: {$client->nom_prenom}",
             'model_type' => Client::class,
@@ -112,7 +122,7 @@ class ClientController extends Controller
 
         // Enregistrer l'activité
         ActivityLog::create([
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'action' => 'update',
             'description' => "Modification des informations du client: {$client->nom_prenom}",
             'model_type' => Client::class,
@@ -132,7 +142,7 @@ class ClientController extends Controller
 
         // Enregistrer l'activité
         ActivityLog::create([
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'action' => 'delete',
             'description' => "Suppression du client: {$clientName}",
             'model_type' => Client::class,
@@ -143,5 +153,155 @@ class ClientController extends Controller
 
         return redirect()->route('dg.clients.index')
             ->with('success', 'Client supprimé avec succès');
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $clients = $this->buildFilteredQuery($request)
+            ->with(['mutuelle', 'lastSouscription.projet'])
+            ->get();
+
+        $pdf = Pdf::loadView('documents.clients_export', [
+            'clients' => $clients,
+            'filters' => $request->only(['search', 'date_creation', 'projet_id', 'mutuelle_id'])
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('clients.pdf');
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $clients = $this->buildFilteredQuery($request)
+            ->with(['mutuelle', 'lastSouscription.projet'])
+            ->get();
+
+        $response = new StreamedResponse(function () use ($clients) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+
+            fputcsv($out, [
+                'ID',
+                'Référence',
+                'Nom et Prénom',
+                'Téléphone',
+                'Email',
+                'Catégorie',
+                'Mutuelle',
+                'Projet',
+                'Date de création'
+            ], ';');
+
+            foreach ($clients as $c) {
+                fputcsv($out, [
+                    $c->id,
+                    $c->ref_client,
+                    $c->nom_prenom,
+                    $c->telephone,
+                    $c->email,
+                    $c->categorie_client,
+                    $c->mutuelle?->nom,
+                    $c->lastSouscription?->projet?->nom,
+                    optional($c->created_at)->format('d/m/Y H:i')
+                ], ';');
+            }
+
+            fclose($out);
+        });
+
+        $filename = 'clients.csv';
+        $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
+        $response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
+
+        return $response;
+    }
+
+    public function editPassword(Client $client)
+    {
+        $user = $this->findUserForClient($client);
+        if (!$user) {
+            return redirect()->route('dg.clients.show', $client)
+                ->with('error', 'Aucun compte utilisateur client trouvé pour ce client.');
+        }
+
+        return view('dg.clients.password', compact('client', 'user'));
+    }
+
+    public function updatePassword(Request $request, Client $client)
+    {
+        $user = $this->findUserForClient($client);
+        if (!$user) {
+            return redirect()->route('dg.clients.show', $client)
+                ->with('error', 'Aucun compte utilisateur client trouvé pour ce client.');
+        }
+
+        $request->validate([
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'update',
+            'description' => "Modification du mot de passe du client: {$user->name}",
+            'model_type' => User::class,
+            'model_id' => $user->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        return redirect()->route('dg.clients.show', $client)
+            ->with('success', 'Mot de passe client mis à jour avec succès');
+    }
+
+    private function buildFilteredQuery(Request $request)
+    {
+        $query = Client::query()->latest();
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nom_prenom', 'like', "%{$search}%")
+                  ->orWhere('ref_client', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('telephone', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('date_creation')) {
+            $query->whereDate('created_at', $request->date_creation);
+        }
+
+        if ($request->filled('mutuelle_id')) {
+            $query->where('mutuelle_id', $request->mutuelle_id);
+        }
+
+        if ($request->filled('projet_id')) {
+            $projetId = $request->projet_id;
+            $query->whereHas('souscriptions', function($q) use ($projetId) {
+                $q->where('programme', $projetId);
+            });
+        }
+
+        return $query;
+    }
+
+    private function findUserForClient(Client $client): ?User
+    {
+        $email = $client->email;
+        if (!empty($email)) {
+            $u = User::where('email', $email)->first();
+            if ($u && $u->isClient()) return $u;
+        }
+
+        if (!empty($client->ref_client)) {
+            $fallbackEmail = strtolower($client->ref_client) . '@jarelinstrudie.local';
+            $u = User::where('email', $fallbackEmail)->first();
+            if ($u && $u->isClient()) return $u;
+        }
+
+        return null;
     }
 }

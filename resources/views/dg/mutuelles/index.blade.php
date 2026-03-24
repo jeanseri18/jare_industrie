@@ -27,7 +27,6 @@
                         <th>Nom</th>
                         <th>Code</th>
                         <th>Contact</th>
-                        <th>Taux de Réduction</th>
                         <th>Site Web</th>
                         <th>Projet Associé</th>
                         <th>Statut</th>
@@ -53,7 +52,6 @@
                                     <span class="text-muted">Aucun contact</span>
                                 @endif
                             </td>
-                            <td>{{ $mutuelle->taux_reduction }}%</td>
                             <td>
                                 @if($mutuelle->site_web)
                                     <a href="{{ $mutuelle->site_web }}" target="_blank" class="text-primary">

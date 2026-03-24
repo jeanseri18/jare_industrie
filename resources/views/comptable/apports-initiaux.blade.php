@@ -48,6 +48,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="card-title-custom"><i class="fas fa-list"></i> Liste des Apports Initiaux</h5>    </div><div>
                         <div class="btn-group" role="group" aria-label="Filtre Statut">
+                            <a class="btn {{ !request('statut') ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('comptable.apports-initiaux', array_filter(['search' => request('search'), 'date_debut' => request('date_debut'), 'date_fin' => request('date_fin')])) }}">Tous</a>
                             <a class="btn {{ request('statut') === 'en_attente' ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('comptable.apports-initiaux', array_filter(['search' => request('search'), 'date_debut' => request('date_debut'), 'date_fin' => request('date_fin'), 'statut' => 'en_attente'])) }}">En attente</a>
                             <a class="btn {{ request('statut') === 'en_cours' ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('comptable.apports-initiaux', array_filter(['search' => request('search'), 'date_debut' => request('date_debut'), 'date_fin' => request('date_fin'), 'statut' => 'en_cours'])) }}">En cours</a>
                             <a class="btn {{ in_array(request('statut'), ['regle','payé']) ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('comptable.apports-initiaux', array_filter(['search' => request('search'), 'date_debut' => request('date_debut'), 'date_fin' => request('date_fin'), 'statut' => 'regle'])) }}">Réglé</a>
@@ -88,9 +89,14 @@
                                 <td>{{ number_format($montantRestant, 0, ',', ' ') }} FCFA</td>
                                 <td>
                                     <div class="btn-group">
-                                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#payerModal{{ $paiement->id }}" title="Enregistrer un paiement">
-                                            <i class="fas fa-money-bill"></i> Payer
-                                        </button>
+                                        <a href="{{ route('comptable.paiements.souscription', ['souscription' => $souscription, 'type' => 'APPORT']) }}" class="btn btn-sm btn-info" title="Voir l'historique des paiements">
+                                            <i class="fas fa-history"></i>
+                                        </a>
+                                        @if($montantRestant > 0)
+                                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#payerModal{{ $paiement->id }}" title="Enregistrer un paiement">
+                                                <i class="fas fa-money-bill"></i> Payer
+                                            </button>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -133,7 +139,7 @@
                             <option value="">Sélectionner le mode</option>
                             <option value="ESPECES">ESPECES</option>
                             <option value="VIREMENT">VIREMENT</option>
-                            <option value="MOBILE_MONEY">MOBILE_MONEY</option>
+                            <option value="PRELEVEMENT_SOURCE">PRÉLÈVEMENT À LA SOURCE</option>
                             <option value="TEMPERAMENT">TEMPERAMENT</option>
                             <option value="CREDIT_BANCAIRE">CREDIT_BANCAIRE</option>
                         </select>
@@ -197,6 +203,11 @@
         }
       });
     });
+
+    const receiptUrl = @json(session('receipt_url'));
+    if (receiptUrl) {
+      window.open(receiptUrl, '_blank');
+    }
   });
 })();
 </script>

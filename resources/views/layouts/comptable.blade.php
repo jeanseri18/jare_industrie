@@ -641,6 +641,12 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a href="{{ route('comptable.clients.index') }}" class="nav-link {{ request()->routeIs('comptable.clients.*') ? 'active' : '' }}">
+                    <i class="fas fa-users"></i>
+                    <span>Gestion des Clients</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="{{ route('comptable.frais-dossier') }}" class="nav-link {{ request()->routeIs('comptable.frais-dossier') ? 'active' : '' }}">
                     <i class="fas fa-file-invoice"></i>
                     <span>Frais de dossier</span>
@@ -661,10 +667,27 @@
                 </a>
             </li>
 
+            <li class="nav-item">
+                <a href="{{ route('comptable.edition-recus') }}" class="nav-link {{ request()->routeIs('comptable.edition-recus') ? 'active' : '' }}">
+                    <i class="fas fa-print"></i>
+                    <span>Édition de reçus</span>
+                </a>
+            </li>
+
+
+            
+
              <li class="nav-item">
                 <a href="{{ route('comptable.projets-soldes') }}" class="nav-link {{ request()->routeIs('comptable.projets-soldes') ? 'active' : '' }}">
                     <i class="fas fa-trophy"></i>
                     <span>Paiements soldés</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a href="{{ route('comptable.dossiers-annules') }}" class="nav-link {{ request()->routeIs('comptable.dossiers-annules') ? 'active' : '' }}">
+                    <i class="fas fa-ban"></i>
+                    <span>Dossiers annulés</span>
                 </a>
             </li>
 
@@ -693,8 +716,12 @@
                     {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                 </div>
                 <div class="dropdown-menu-custom" id="userDropdown">
-                
-
+                    <a href="{{ route('profile.show') }}" class="dropdown-item-custom">
+                        <i class="fas fa-user-circle me-2"></i> Mon Profil
+                    </a>
+                    <a href="{{ route('comptable.dashboard') }}" class="dropdown-item-custom">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
                     <hr style="margin: 0; border-color: #e5e7eb;">
                     <form method="POST" action="{{ route('logout') }}" style="margin: 0;">
                         @csrf
@@ -727,7 +754,11 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="application/json" id="receiptUrlData">@php echo json_encode(session('receipt_url')); @endphp</script>
     <script>
+        const receiptUrl = JSON.parse(document.getElementById('receiptUrlData')?.textContent || 'null');
+        if (receiptUrl) window.open(receiptUrl, "_blank");
+
         function toggleDropdown() {
             const dropdown = document.getElementById('userDropdown');
             dropdown.classList.toggle('show');

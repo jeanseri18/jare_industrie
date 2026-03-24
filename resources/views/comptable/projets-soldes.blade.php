@@ -1,12 +1,12 @@
 @extends('layouts.comptable')
 
-@section('title', 'Projets Soldés')
+@section('title', 'Liste des paiements soldés')
 
 @section('content')
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col-12">
-            <h2 class="page-title">Projets Soldés</h2>
+            <h2 class="page-title">Liste des paiements soldés</h2>
         </div>
     </div>
 
@@ -15,7 +15,7 @@
         <div class="col-md-3">
             <div class="stat-card">
                 <div class="stat-header">
-                    <span class="stat-title">Total Projets Soldés</span>
+                    <span class="stat-title">Total paiements soldés</span>
                     <div class="stat-icon icon-green">
                         <i class="fas fa-trophy"></i>
                     </div>
@@ -81,11 +81,10 @@
                         <div class="col-md-2">
                             <label for="type" class="form-label">Type de paiement</label>
                             <select class="form-select" id="type" name="type">
-                                <option value="">Tous</option>
-                                <option value="mensualite" {{ request('type') == 'mensualite' ? 'selected' : '' }}>Mensualité</option>
-                                <option value="acompte" {{ request('type') == 'acompte' ? 'selected' : '' }}>Acompte</option>
-                                <option value="apport_initial" {{ request('type') == 'apport_initial' ? 'selected' : '' }}>Apport initial</option>
-                                <option value="frais_dossier" {{ request('type') == 'frais_dossier' ? 'selected' : '' }}>Frais de dossier</option>
+                                <option value="">Tout</option>
+                                <option value="PROJET" {{ request('type') == 'PROJET' ? 'selected' : '' }}>Souscription</option>
+                                <option value="APPORT" {{ request('type') == 'APPORT' ? 'selected' : '' }}>Apport Initial</option>
+                                <option value="FRAIS_DOSSIER" {{ request('type') == 'FRAIS_DOSSIER' ? 'selected' : '' }}>Frais de Dossier</option>
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -119,7 +118,7 @@
                 <div class="card-header-custom">
                     <h5 class="card-title-custom">
                         <i class="fas fa-list"></i>
-                        Liste des Projets Soldés
+                        Liste des paiements soldés
                     </h5>
                 </div>
                 <div class="table-responsive">
@@ -129,12 +128,11 @@
                                 <th>Référence</th>
                                 <th>Client</th>
                                 <th>Projet</th>
-                                <th>Type</th>
+                                <th>Type Paiement</th>
+                                <th>Statut Dossier</th>
                                 <th>Montant</th>
                                 <th>Date de Paiement</th>
-                                <th>Date de Validation</th>
                                 <th>Comptable</th>
-                                <th>Statut</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -145,26 +143,41 @@
                                 <td>{{ $paiement->souscription->projet->nom ?? 'N/A' }}</td>
                                 <td>
                                     @if($paiement->type == 'mensualite')
-                                        <span class="badge badge-info">Mensualité</span>
+                                        <span class="badge-custom badge-info">Mensualité</span>
                                     @elseif($paiement->type == 'acompte')
-                                        <span class="badge badge-primary">Acompte</span>
-                                    @elseif($paiement->type == 'apport_initial')
-                                        <span class="badge badge-success">Apport Initial</span>
-                                    @elseif($paiement->type == 'frais_dossier')
-                                        <span class="badge badge-warning">Frais Dossier</span>
+                                        <span class="badge-custom badge-primary">Acompte</span>
+                                    @elseif($paiement->type == 'apport_initial' || $paiement->type == 'APPORT')
+                                        <span class="badge-custom badge-success">Apport Initial</span>
+                                    @elseif($paiement->type == 'frais_dossier' || $paiement->type == 'FRAIS_DOSSIER')
+                                        <span class="badge-custom badge-warning">Frais Dossier</span>
+                                    @elseif($paiement->type == 'PROJET')
+                                        <span class="badge-custom badge-info">Souscription</span>
                                     @else
-                                        <span class="badge badge-secondary">{{ ucfirst($paiement->type) }}</span>
+                                        <span class="badge-custom badge-secondary">{{ ucfirst($paiement->type) }}</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if(($paiement->souscription->statut ?? '') == 'SOLD')
+                                        <span class="badge badge-success" style="background-color: #d1fae5; color: #059669; border: none; padding: 4px 8px; border-radius: 6px;">
+                                            <i class="fas fa-check-circle"></i> Soldé
+                                        </span>
+                                    @elseif(($paiement->souscription->statut ?? '') == 'APPORT_OK')
+                                        <span class="badge badge-info" style="background-color: #dbeafe; color: #2563eb; border: none; padding: 4px 8px; border-radius: 6px;">
+                                            <i class="fas fa-hand-holding-usd"></i> Apport OK
+                                        </span>
+                                    @elseif(($paiement->souscription->statut ?? '') == 'FRAIS_OK')
+                                        <span class="badge badge-primary" style="background-color: #cfe2ff; color: #084298; border: none; padding: 4px 8px; border-radius: 6px;">
+                                            <i class="fas fa-file-invoice"></i> Frais OK
+                                        </span>
+                                    @else
+                                        <span class="badge badge-warning" style="background-color: #fed7aa; color: #ea580c; border: none; padding: 4px 8px; border-radius: 6px;">
+                                            {{ ucfirst($paiement->souscription->statut ?? 'En cours') }}
+                                        </span>
                                     @endif
                                 </td>
                                 <td>{{ number_format($paiement->montant, 0, ',', ' ') }} FCFA</td>
                                 <td>{{ $paiement->date_paiement->format('d/m/Y') }}</td>
-                                <td>{{ $paiement->valide_at ? $paiement->valide_at->format('d/m/Y H:i') : 'Non validé' }}</td>
                                 <td>{{ $paiement->comptable->name ?? 'Non assigné' }}</td>
-                                <td>
-                                    <span class="badge badge-success">
-                                        <i class="fas fa-check"></i> Soldé
-                                    </span>
-                                </td>
                             </tr>
                             @empty
                             <tr>

@@ -33,13 +33,28 @@
                         <tr>
                             <td>{{ optional($s->client)->nom_prenom }}</td>
                             <td>{{ optional($s->projet)->nom }}</td>
-                            <td>{{ number_format($s->montant_total ?? 0, 0, ',', ' ') }} FCFA</td>
+                            <td>{{ number_format($s->montant_total ?? (($s->prix_logement ?? 0) + \App\Models\FraisDossier::where('id_souscription', $s->id)->sum('montant')), 0, ',', ' ') }} FCFA</td>
                             <td>
                                 <span class="badge-custom bg-success">Soldé</span>
                             </td>
-                            <td>{{ optional(optional($s->paiements)->last())->date_paiement?->format('d/m/y') }}</td>
+                            <td>{{ optional($s->dernier_paiement?->date_paiement)->format('d/m/y') }}</td>
                             <td>
-                                <a href="{{ route('dg.souscriptions.confirmation', $s) }}" class="btn btn-info btn-sm"><i class="fas fa-eye me-1"></i> Confirmer</a>
+                                @php
+                                    $vf = \App\Models\ValidationFinale::where('idsouscription', $s->id)->first();
+                                @endphp
+                                @if(!$s->attributionLot)
+                                    <a href="{{ route('dg.attribution.show', $s) }}" class="btn btn-warning btn-sm">
+                                        <i class="fas fa-key me-1"></i> Attribuer
+                                    </a>
+                                @elseif($vf)
+                                    <a href="{{ route('dg.souscriptions.lettre-definitive', $s) }}" class="btn btn-success btn-sm" target="_blank" rel="noopener">
+                                        <i class="fas fa-file-download me-1"></i> Générer la lettre
+                                    </a>
+                                @else
+                                    <a href="{{ route('dg.souscriptions.confirmation', $s) }}" class="btn btn-info btn-sm">
+                                        <i class="fas fa-eye me-1"></i> Confirmer
+                                    </a>
+                                @endif
                             </td>
                         </tr>
                     @empty
@@ -52,4 +67,15 @@
         </div>
     </div>
 </div>
+@if(session('download_lettre_url'))
+    <div class="alert alert-success d-flex align-items-center justify-content-between" role="alert" style="margin: 15px 0;">
+        <div>
+            <i class="fas fa-file-pdf me-2"></i>
+            Lettre définitive prête.
+        </div>
+        <a href="{{ session('download_lettre_url') }}" class="btn btn-success btn-sm" target="_blank" rel="noopener">
+            Ouvrir
+        </a>
+    </div>
+@endif
 @endsection

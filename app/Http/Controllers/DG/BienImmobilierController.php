@@ -28,7 +28,7 @@ class BienImmobilierController extends Controller
     {
         $request->validate([
             'titre' => 'required|string|max:150',
-            'type' => 'required|in:duplex,appartement,villa,terrain',
+            'type' => 'required|in:duplex,appartement,villa,terrain,etage,villa basse,villa +R1,autre',
             'nbre_piece' => 'nullable|integer|min:0',
             'nbre_salon' => 'nullable|integer|min:0',
             'nbre_douche' => 'nullable|integer|min:0',
@@ -63,9 +63,22 @@ class BienImmobilierController extends Controller
             'installation_chauffe_eau' => 'boolean'
         ]);
 
-        $bien = $projet->bien_immobiliers()->create(array_merge($request->all(), [
-            'cree_par' => auth()->id()
-        ]));
+        $data = $request->all();
+        $typeMap = [
+            'villa' => 'villa basse',
+            'Villa' => 'villa basse',
+        ];
+        $data['type'] = $typeMap[$data['type']] ?? $data['type'];
+        if (isset($data['nbre_place_garage'])) {
+            $data['nbre_placegarage'] = $data['nbre_place_garage'];
+            unset($data['nbre_place_garage']);
+        }
+        if (isset($data['terrasse'])) {
+            $data['terasse'] = $data['terrasse'];
+            unset($data['terrasse']);
+        }
+
+        $bien = $projet->bien_immobiliers()->create($data);
 
         // Enregistrer l'activité
         ActivityLog::create([
@@ -92,7 +105,7 @@ class BienImmobilierController extends Controller
     {
         $request->validate([
             'titre' => 'required|string|max:150',
-            'type' => 'required|in:duplex,appartement,villa,terrain',
+            'type' => 'required|in:duplex,appartement,villa,terrain,etage,villa basse,villa +R1,autre',
             'nbre_piece' => 'nullable|integer|min:0',
             'nbre_salon' => 'nullable|integer|min:0',
             'nbre_douche' => 'nullable|integer|min:0',
@@ -127,7 +140,22 @@ class BienImmobilierController extends Controller
             'installation_chauffe_eau' => 'boolean'
         ]);
 
-        $bien->update($request->all());
+        $data = $request->all();
+        $typeMap = [
+            'villa' => 'villa basse',
+            'Villa' => 'villa basse',
+        ];
+        $data['type'] = $typeMap[$data['type']] ?? $data['type'];
+        if (isset($data['nbre_place_garage'])) {
+            $data['nbre_placegarage'] = $data['nbre_place_garage'];
+            unset($data['nbre_place_garage']);
+        }
+        if (isset($data['terrasse'])) {
+            $data['terasse'] = $data['terrasse'];
+            unset($data['terrasse']);
+        }
+
+        $bien->update($data);
         $projet = $bien->projet;
 
         // Enregistrer l'activité

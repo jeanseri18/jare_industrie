@@ -2,6 +2,41 @@
 
 @section('title', 'Suivi des Paiements Projet')
 
+@push('styles')
+<style>
+    .table-custom {
+        font-size: 0.85rem;
+    }
+    .table-custom thead th {
+        padding: 8px 10px;
+        white-space: nowrap;
+    }
+    .table-custom tbody td {
+        padding: 10px 10px;
+    }
+    .badge-custom {
+        padding: 3px 6px;
+        font-size: 0.75rem;
+    }
+    .btn-sm {
+        padding: 0.25rem 0.4rem;
+        font-size: 0.75rem;
+    }
+    .container-fluid {
+        padding-left: 5px;
+        padding-right: 5px;
+    }
+    .data-table-container {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+    .table-custom {
+        width: 100% !important;
+        margin-bottom: 0 !important;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="container-fluid">
     <div class="row mb-4">
@@ -124,6 +159,7 @@
                             Liste des Souscriptions
                         </h5>    </div><div>
                         <div class="btn-group" role="group" aria-label="Filtre Statut">
+                            <a class="btn {{ !request('statut') ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('comptable.suivi-paiements-projet', array_filter(['search' => request('search'), 'projet' => request('projet'), 'mode_paiement' => request('mode_paiement'), 'date_debut' => request('date_debut'), 'date_fin' => request('date_fin')])) }}">Tous</a>
                             <a class="btn {{ request('statut') === 'en_attente' ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('comptable.suivi-paiements-projet', array_filter(['search' => request('search'), 'projet' => request('projet'), 'mode_paiement' => request('mode_paiement'), 'date_debut' => request('date_debut'), 'date_fin' => request('date_fin'), 'statut' => 'en_attente'])) }}">En attente</a>
                             <a class="btn {{ request('statut') === 'en_cours' ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('comptable.suivi-paiements-projet', array_filter(['search' => request('search'), 'projet' => request('projet'), 'mode_paiement' => request('mode_paiement'), 'date_debut' => request('date_debut'), 'date_fin' => request('date_fin'), 'statut' => 'en_cours'])) }}">En cours</a>
                             <a class="btn {{ in_array(request('statut'), ['regle','payé']) ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('comptable.suivi-paiements-projet', array_filter(['search' => request('search'), 'projet' => request('projet'), 'mode_paiement' => request('mode_paiement'), 'date_debut' => request('date_debut'), 'date_fin' => request('date_fin'), 'statut' => 'regle'])) }}">Réglé</a>
@@ -135,14 +171,16 @@
                     <table class="table-custom">
                         <thead>
                             <tr>
-                                <th>Référence Client</th>
-                                <th>Référence Souscription</th>
-                                <th>Nom du Client</th>
+                                <th>Réf. Client</th>
+                                <th>Réf. Souscription</th>
+                                <th>Client</th>
                                 <th>Projet</th>
-                                <th>Prix Logement</th>
-                                <th>Montant Payé</th>
-                                <th>Montant Restant</th>
-                                <th>Moyen de Paiement</th>
+                                <th>Statut</th>
+                                <th>Prix Log.</th>
+                                <th>Frais Doss.</th>
+                                <th>Payé</th>
+                                <th>Restant</th>
+                                <th>Moyen Paiement</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -150,7 +188,9 @@
                             @forelse($souscriptions as $souscription)
                             @php
                                 $totalPaye = $souscription->paiements->where('statut', 'payé')->sum('montant');
-                                $montantRestant = $souscription->prix_logement - $totalPaye;
+                                $fraisDossier = \App\Models\FraisDossier::where('id_souscription', $souscription->id)->sum('montant');
+                                $montantTotalDu = ($souscription->prix_logement ?? 0) + ($fraisDossier ?? 0);
+                                $montantRestant = max($montantTotalDu - $totalPaye, 0);
                                 $dernierPaiement = $souscription->paiements->sortByDesc('date_paiement')->first();
                             @endphp
                             <tr>
@@ -158,17 +198,37 @@
                                 <td>{{ $souscription->ref_souscription }}</td>
                                 <td>{{ $souscription->client->nom_prenom ?? 'N/A' }}</td>
                                 <td>{{ $souscription->projet->nom ?? 'N/A' }}</td>
-                                <td>{{ number_format($souscription->prix_logement, 0, ',', ' ') }} FCFA</td>
-                                <td>{{ number_format($totalPaye, 0, ',', ' ') }} FCFA</td>
-                                <td>{{ number_format($montantRestant, 0, ',', ' ') }} FCFA</td>
-                                <td>{{ $souscription->mode_paiement ?? 'Non défini' }}</td>
+                                <td>
+                                    @if(($souscription->statut ?? '') == 'SOLD')
+                                        <span class="badge badge-success" style="background-color: #d1fae5; color: #059669; border: none; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem;">
+                                            Soldé
+                                        </span>
+                                    @elseif(($souscription->statut ?? '') == 'APPORT_OK')
+                                        <span class="badge badge-info" style="background-color: #dbeafe; color: #2563eb; border: none; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem;">
+                                            Apport OK
+                                        </span>
+                                    @elseif(($souscription->statut ?? '') == 'FRAIS_OK')
+                                        <span class="badge badge-primary" style="background-color: #cfe2ff; color: #084298; border: none; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem;">
+                                            Frais OK
+                                        </span>
+                                    @else
+                                        <span class="badge badge-warning" style="background-color: #fed7aa; color: #ea580c; border: none; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem;">
+                                            {{ ucfirst($souscription->statut ?? 'En cours') }}
+                                        </span>
+                                    @endif
+                                </td>
+                                <td>{{ number_format($souscription->prix_logement, 0, ',', ' ') }}</td>
+                                <td>{{ number_format($fraisDossier, 0, ',', ' ') }}</td>
+                                <td>{{ number_format($totalPaye, 0, ',', ' ') }}</td>
+                                <td>{{ number_format($montantRestant, 0, ',', ' ') }}</td>
+                                <td>{{ $souscription->mode_paiement ?? 'N/A' }}</td>
                                 <td>
                                     <div class="btn-group">
                                         <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#paiementModal{{ $souscription->id }}" title="Effectuer un paiement">
                                             <i class="fas fa-money-bill-wave"></i> Payer
                                         </button>
-                                        <a href="{{ route('comptable.paiements.souscription', $souscription) }}" class="btn btn-sm btn-info" title="Voir les paiements">
-                                            <i class="fas fa-eye"></i> Voir
+                                        <a href="{{ route('comptable.paiements.souscription', $souscription) }}" class="btn btn-sm btn-info" title="Voir l'historique et imprimer les reçus">
+                                            <i class="fas fa-file-invoice"></i> Voir
                                         </a>
                                     </div>
                                 </td>
@@ -198,6 +258,12 @@
                 <h5 class="modal-title" id="paiementModalLabel{{ $souscription->id }}">Effectuer un paiement - {{ $souscription->ref_souscription }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            @php
+                $totalPayeModal = $souscription->paiements()->where('statut','payé')->sum('montant');
+                $fraisDossierModal = \App\Models\FraisDossier::where('id_souscription', $souscription->id)->sum('montant');
+                $montantTotalDuModal = ($souscription->prix_logement ?? 0) + ($fraisDossierModal ?? 0);
+                $montantRestantModal = max($montantTotalDuModal - $totalPayeModal, 0);
+            @endphp
             <form action="{{ route('comptable.paiements.create', $souscription) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body">
@@ -206,13 +272,21 @@
                         <select class="form-control" id="type_paiement{{ $souscription->id }}" name="type" required>
                             <option value="">Sélectionner le type</option>
                             <option value="FRAIS_DOSSIER">Frais de dossier</option>
-                            <option value="APPORT">Apport</option>
+                            @if(!empty($souscription->apport_initial_paye_par_client))
+                                <option value="APPORT">Apport</option>
+                            @else
+                                <option value="APPORT" disabled>Apport (non applicable)</option>
+                            @endif
                             <option value="PROJET">Projet</option>
                         </select>
+                        @if(empty($souscription->apport_initial_paye_par_client))
+                            <small class="text-muted">Apport initial non applicable: le client paie 100% en paiement projet.</small>
+                        @endif
                     </div>
                     <div class="form-group">
                         <label for="montant{{ $souscription->id }}">Montant</label>
-                        <input type="number" class="form-control" id="montant{{ $souscription->id }}" name="montant" min="1" max="{{ $montantRestant }}" required>
+                        <input type="number" class="form-control" id="montant{{ $souscription->id }}" name="montant" min="1" step="1" required>
+                        <small class="text-muted">Montant restant indicatif: {{ number_format($montantRestantModal, 0, ',', ' ') }} FCFA</small>
                     </div>
                     <div class="form-group">
                         <label for="mode{{ $souscription->id }}">Mode de paiement</label>
@@ -220,7 +294,7 @@
                             <option value="">Sélectionner le mode</option>
                             <option value="ESPECES">ESPECES</option>
                             <option value="VIREMENT">VIREMENT</option>
-                            <option value="MOBILE_MONEY">MOBILE_MONEY</option>
+                            <option value="PRELEVEMENT_SOURCE">PRÉLÈVEMENT À LA SOURCE</option>
                             <option value="TEMPERAMENT">TEMPERAMENT</option>
                             <option value="CREDIT_BANCAIRE">CREDIT_BANCAIRE</option>
                         </select>
@@ -253,6 +327,7 @@
 @endsection
 
 @push('scripts')
+<script type="application/json" id="receiptUrlData">@php echo json_encode(session('receipt_url')); @endphp</script>
 <script>
 (function() {
   function formatBytes(bytes) {
@@ -291,6 +366,15 @@
         }
       });
     });
+
+    const receiptUrl = JSON.parse(document.getElementById('receiptUrlData')?.textContent || 'null');
+    if (receiptUrl) {
+      const key = 'opened_receipt_' + receiptUrl;
+      if (!sessionStorage.getItem(key)) {
+        window.open(receiptUrl, '_blank');
+        sessionStorage.setItem(key, '1');
+      }
+    }
   });
 })();
 </script>

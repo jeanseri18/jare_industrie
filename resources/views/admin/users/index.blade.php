@@ -15,6 +15,27 @@
         </a>
     </div>
     <div style="padding: 20px;">
+        <form method="GET" action="{{ route('admin.users.index') }}" class="row g-2 mb-3">
+            <div class="col-md-5">
+                <input type="text" name="search" class="form-control" placeholder="Nom, email, téléphone..." value="{{ request('search') }}">
+            </div>
+            <div class="col-md-4">
+                <select name="role" class="form-select">
+                    <option value="">Tous les rôles</option>
+                    @foreach(($roles ?? []) as $role)
+                        <option value="{{ $role }}" {{ request('role') === $role ? 'selected' : '' }}>
+                            {{ getUserRoleLabel($role) }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button class="btn btn-primary" type="submit">
+                    <i class="fas fa-filter"></i> Filtrer
+                </button>
+                <a class="btn btn-outline-secondary" href="{{ route('admin.users.index') }}">Réinitialiser</a>
+            </div>
+        </form>
 
     <div class="table-responsive">
             <table class="table-custom">
@@ -38,28 +59,34 @@
                         <td>{{ $user->name }}</td>
                         <td>{{ $user->email }}</td>
                         <td>
-                            <span class="badge-custom badge-info">{{ ucfirst($user->role) }}</span>
+                            <span class="badge-custom badge-info">{{ getUserRoleLabel($user->role) }}</span>
                         </td>
                         <td>{{ $user->created_at->format('d/m/Y') }}</td>
                         <td>
                             <div class="btn-group">
-                                <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <form action="#" method="POST" style="display: inline;">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
-                                            onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
+                                @if($user->role !== 'client')
+                                    <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form action="{{ route('admin.users.destroy', $user) }}" method="POST" style="display: inline;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                @else
+                                    <span class="text-muted">—</span>
+                                @endif
                             </div>
                         </td>
                     </tr>
                     @endforeach
                 </tbody>
             </table>
+        </div>
+        <div class="mt-3">
+            {{ $users->links('pagination::bootstrap-5') }}
         </div>
     </div>
 @endsection

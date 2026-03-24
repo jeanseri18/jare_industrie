@@ -10,6 +10,7 @@ class Projet extends Model
 {
     protected $fillable = [
         'nom',
+        'numero_agrement',
         'localisation',
         'superficie',
         'nb_logements',

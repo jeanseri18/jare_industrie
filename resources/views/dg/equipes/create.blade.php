@@ -33,20 +33,24 @@
                 <label class="form-label me-3">Rôle :</label>
                 <div class="d-flex flex-wrap gap-4">
                     <div class="form-check">
-                        <input class="form-check-input role-option" type="checkbox" id="role_operateur" name="role" value="OPERATEUR" checked>
+                        <input class="form-check-input role-option" type="checkbox" id="role_operateur" name="role" value="operateur" checked>
                         <label class="form-check-label" for="role_operateur">Opérateur</label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input role-option" type="checkbox" id="role_comptable" name="role" value="COMPTABLE">
+                        <input class="form-check-input role-option" type="checkbox" id="role_comptable" name="role" value="comptable">
                         <label class="form-check-label" for="role_comptable">Comptable</label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input role-option" type="checkbox" id="role_dg" name="role" value="DG">
+                        <input class="form-check-input role-option" type="checkbox" id="role_dg" name="role" value="dg">
                         <label class="form-check-label" for="role_dg">DG</label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input role-option" type="checkbox" id="role_admin_tech" name="role" value="ADMIN_TECHNIQUE">
+                        <input class="form-check-input role-option" type="checkbox" id="role_admin_tech" name="role" value="admin_technique">
                         <label class="form-check-label" for="role_admin_tech">Administrateur technique</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input role-option" type="checkbox" id="role_dircom" name="role" value="chef_commercial">
+                        <label class="form-check-label" for="role_dircom">Directeur commercial</label>
                     </div>
                 </div>
             </div>

@@ -65,6 +65,14 @@
                         <label class="form-label">Numéro villa</label>
                         <input type="text" name="numero_villa" class="form-control" value="{{ old('numero_villa', optional($attrib)->numero_villa) }}" {{ $estAttribue ? 'readonly' : '' }} required>
                     </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Superficie (m²)</label>
+                        <input type="number" step="0.01" name="superficie" class="form-control" value="{{ old('superficie', optional($attrib)->superficie) }}" {{ $estAttribue ? 'readonly' : '' }} required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Surface bâtie (m²)</label>
+                        <input type="number" step="0.01" class="form-control" value="{{ optional($souscription->bienImmobilier)->surface_habitable }}" readonly>
+                    </div>
                     <div class="col-12">
                         <label class="form-label">Observations internes</label>
                         <textarea name="observations_internes" class="form-control" rows="4" placeholder="Saisir vos observations" {{ $estAttribue ? 'readonly' : '' }}>{{ old('observations_internes', optional($attrib)->observations_internes) }}</textarea>

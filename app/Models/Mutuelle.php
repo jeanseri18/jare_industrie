@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Mutuelle extends Model
 {
@@ -53,5 +54,12 @@ class Mutuelle extends Model
     public function clients(): HasMany
     {
         return $this->hasMany(Client::class);
+    }
+
+    public function biens(): BelongsToMany
+    {
+        return $this->belongsToMany(BienImmobilier::class, 'bien_immobilier_mutuelle')
+                    ->withPivot('prix_special')
+                    ->withTimestamps();
     }
 }

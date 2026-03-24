@@ -35,7 +35,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Administrateur Système',
             'email' => 'admin@jareindustrie.ht',
             'password' => Hash::make('admin123'),
-            'role' => 'Admin Technique'
+            'role' => 'admin_technique'
         ]);
         $admin->update(['telephone' => '509-3712-3456', 'adresse' => 'Port-au-Prince, Haïti']);
 
@@ -44,7 +44,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Directeur Général',
             'email' => 'dg@jareindustrie.ht',
             'password' => Hash::make('dg123456'),
-            'role' => 'DG'
+            'role' => 'dg'
         ]);
         $dg->update(['telephone' => '509-3723-4567', 'adresse' => 'Port-au-Prince, Haïti']);
 
@@ -53,16 +53,25 @@ class DatabaseSeeder extends Seeder
             'name' => 'Chef Commercial',
             'email' => 'commercial@jareindustrie.ht',
             'password' => Hash::make('commercial123'),
-            'role' => 'Chef Commercial'
+            'role' => 'chef_commercial'
         ]);
         $chefCommercial->update(['telephone' => '509-3734-5678', 'adresse' => 'Port-au-Prince, Haïti']);
+        
+        // Create Directeur Commercial (Dir Com)
+        $dirCom = User::create([
+            'name' => 'Directeur Commercial',
+            'email' => 'dircom@jareindustrie.ht',
+            'password' => Hash::make('dircom123'),
+            'role' => 'chef_commercial'
+        ]);
+        $dirCom->update(['telephone' => '509-3734-8888', 'adresse' => 'Port-au-Prince, Haïti']);
 
         // Create Comptable
         $comptable = User::create([
             'name' => 'Comptable',
             'email' => 'comptable@jareindustrie.ht',
             'password' => Hash::make('comptable123'),
-            'role' => 'Comptable'
+            'role' => 'comptable'
         ]);
         $comptable->update(['telephone' => '509-3745-6789', 'adresse' => 'Port-au-Prince, Haïti']);
 
@@ -71,7 +80,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Opérateur de saisie',
             'email' => 'operateur@jareindustrie.ht',
             'password' => Hash::make('operateur123'),
-            'role' => 'Operateur'
+            'role' => 'operateur'
         ]);
         $operateur->update(['telephone' => '509-3756-7890', 'adresse' => 'Port-au-Prince, Haïti']);
 

@@ -14,6 +14,8 @@ class Souscription extends Model
         'operateur_id',
         'client_id',
         'categorie_client',
+        'nom',
+        'prenom',
         'nom_prenom',
         'date_naissance',
         'lieu_naissance',
@@ -21,8 +23,11 @@ class Souscription extends Model
         'nombre_enfants',
         'ayant_droit',
         'email',
+        'telephone',
         'salaire_mensuel',
         'situation_matrimoniale',
+        'nom_conjoint',
+        'telephone_conjoint',
         'nature_piece',
         'numero_piece',
         'fichier_piece',
@@ -36,8 +41,11 @@ class Souscription extends Model
         'mode_paiement',
         'valeur_souscription',
         'apport_initial',
+        'apport_initial_paye_par_client',
         'frais_souscription',
-        'statut'
+        'statut',
+        'statut_correction',
+        'statut_precedent'
     ];
 
     protected $casts = [
@@ -48,6 +56,7 @@ class Souscription extends Model
         'duree_contrat_mois' => 'integer',
         'valeur_souscription' => 'integer',
         'apport_initial' => 'integer',
+        'apport_initial_paye_par_client' => 'boolean',
         'frais_souscription' => 'integer',
         'ayant_droit' => 'array'
     ];
@@ -82,5 +91,15 @@ class Souscription extends Model
     public function attributionLot(): HasOne
     {
         return $this->hasOne(AttributionLot::class, 'id_souscription');
+    }
+
+    public function fraisDossier(): HasOne
+    {
+        return $this->hasOne(FraisDossier::class, 'id_souscription');
+    }
+
+    public function apportInitial(): HasOne
+    {
+        return $this->hasOne(ApportInitial::class, 'id_souscription');
     }
 }

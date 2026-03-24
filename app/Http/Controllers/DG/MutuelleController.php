@@ -5,6 +5,7 @@ namespace App\Http\Controllers\DG;
 use App\Http\Controllers\Controller;
 use App\Models\Mutuelle;
 use App\Models\Projet;
+use App\Models\BienImmobilier;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 
@@ -19,6 +20,12 @@ class MutuelleController extends Controller
         return view('dg.mutuelles.index', compact('mutuelles'));
     }
 
+    public function getBiens(Projet $projet)
+    {
+        $biens = $projet->bien_immobiliers;
+        return response()->json($biens);
+    }
+
     public function create()
     {
         $projets = Projet::where('est_actif', true)->pluck('nom', 'id');
@@ -31,19 +38,30 @@ class MutuelleController extends Controller
             'nom' => 'required|string|max:255',
             'code' => 'nullable|string|max:50|unique:mutuelles',
             'description' => 'nullable|string',
-            'taux_reduction' => 'required|numeric|min:0|max:100',
             'est_active' => 'boolean',
-            'project_id' => 'nullable|exists:projets,id',
-            'site_web' => 'nullable|url|max:255',
+            'project_id' => 'required|exists:projets,id',
+            'site_web' => 'nullable|string|max:255',
             'nom_contact' => 'nullable|string|max:255',
             'telephone_contact' => 'nullable|string|max:20',
-            'email_contact' => 'nullable|email|max:255'
+            'email_contact' => 'nullable|email|max:255',
+            'biens' => 'nullable|array',
+            'biens.*' => 'nullable|numeric|min:0'
         ]);
 
         $mutuelle = Mutuelle::create(array_merge(
-            $request->all(),
+            $request->except('biens'),
             ['cree_par' => auth()->id()]
         ));
+
+        if ($request->has('biens')) {
+            $syncData = [];
+            foreach ($request->biens as $bienId => $prix) {
+                if ($prix !== null) {
+                    $syncData[$bienId] = ['prix_special' => $prix];
+                }
+            }
+            $mutuelle->biens()->sync($syncData);
+        }
 
         // Enregistrer l'activité
         ActivityLog::create([
@@ -62,7 +80,8 @@ class MutuelleController extends Controller
 
     public function edit(Mutuelle $mutuelle)
     {
-        $projets = Projet::where('est_active', true)->pluck('nom', 'id');
+        $mutuelle->load('biens');
+        $projets = Projet::where('est_actif', true)->pluck('nom', 'id');
         return view('dg.mutuelles.edit', compact('mutuelle', 'projets'));
     }
 
@@ -72,16 +91,27 @@ class MutuelleController extends Controller
             'nom' => 'required|string|max:255',
             'code' => 'nullable|string|max:50|unique:mutuelles,code,' . $mutuelle->id,
             'description' => 'nullable|string',
-            'taux_reduction' => 'required|numeric|min:0|max:100',
             'est_active' => 'boolean',
-            'project_id' => 'nullable|exists:projets,id',
-            'site_web' => 'nullable|url|max:255',
+            'project_id' => 'required|exists:projets,id',
+            'site_web' => 'nullable|string|max:255',
             'nom_contact' => 'nullable|string|max:255',
             'telephone_contact' => 'nullable|string|max:20',
-            'email_contact' => 'nullable|email|max:255'
+            'email_contact' => 'nullable|email|max:255',
+            'biens' => 'nullable|array',
+            'biens.*' => 'nullable|numeric|min:0'
         ]);
 
-        $mutuelle->update($request->all());
+        $mutuelle->update($request->except('biens'));
+
+        if ($request->has('biens')) {
+            $syncData = [];
+            foreach ($request->biens as $bienId => $prix) {
+                if ($prix !== null) {
+                    $syncData[$bienId] = ['prix_special' => $prix];
+                }
+            }
+            $mutuelle->biens()->sync($syncData);
+        }
 
         // Enregistrer l'activité
         ActivityLog::create([

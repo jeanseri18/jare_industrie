@@ -147,7 +147,32 @@
                 </h5>
             </div>
             <div style="padding: 20px;">
-                <canvas id="usersByRoleChart" height="250"></canvas>
+                <div id="usersByRoleEmpty" class="empty-state" style="display:none;">
+                    <p></p>
+                </div>
+                <div id="usersByRoleData" data-users='@json($usersByRole)' style="display:none;"></div>
+                <div class="mt-3">
+                    @php
+                        $roleLabels = [
+                            'dg' => 'DG',
+                            'admin_technique' => 'Admin technique',
+                            'operateur' => 'Opérateur',
+                            'comptable' => 'Comptable',
+                            'chef_commercial' => 'Chef commercial',
+                            'client' => 'Client',
+                        ];
+                    @endphp
+                    <table class="table table-sm mb-0">
+                        <tbody>
+                            @foreach(($usersByRole ?? []) as $role => $count)
+                                <tr>
+                                    <td>{{ $roleLabels[$role] ?? $role }}</td>
+                                    <td class="text-end fw-semibold">{{ $count }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -256,9 +281,6 @@
                 <h5 class="card-title-custom">
                     <i class="fas fa-database me-2"></i>Sauvegardes récentes
                 </h5>
-                <a href="{{ route('admin.backup.index') }}" class="btn-link-custom">
-                    Gérer <i class="fas fa-cog ms-1"></i>
-                </a>
             </div>
             <div style="padding: 20px;">
                 @if($stats['lastBackup'])
@@ -338,17 +360,6 @@
                 </a>
             </div>
             <div class="col-md-3 mb-3">
-                <a href="{{ route('admin.backup.index') }}" class="action-btn">
-                    <div class="action-btn-icon" style="background: #d1fae5; color: #059669;">
-                        <i class="fas fa-database"></i>
-                    </div>
-                    <div class="action-btn-text">
-                        <div class="action-btn-title">Sauvegarder BDD</div>
-                        <div class="action-btn-subtitle">Backup complet</div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-md-3 mb-3">
                 <a href="{{ route('admin.history.index') }}" class="action-btn">
                     <div class="action-btn-icon" style="background: #e0e7ff; color: #4f46e5;">
                         <i class="fas fa-history"></i>
@@ -359,7 +370,7 @@
                     </div>
                 </a>
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-md-6 mb-3">
                 <button onclick="window.print()" class="action-btn">
                     <div class="action-btn-icon" style="background: #f3f4f6; color: #6b7280;">
                         <i class="fas fa-print"></i>
@@ -637,20 +648,52 @@
 // Graphique des utilisateurs par rôle
 const ctx = document.getElementById('usersByRoleChart');
 if (ctx) {
+    const usersByRoleDataEl = document.getElementById('usersByRoleData');
+    let usersByRole = {};
+    try {
+        usersByRole = usersByRoleDataEl?.dataset?.users ? JSON.parse(usersByRoleDataEl.dataset.users) : {};
+    } catch (e) {
+        usersByRole = {};
+    }
+    const entries = Object.entries(usersByRole);
+    const roleLabels = {
+        dg: 'DG',
+        admin_technique: 'Admin technique',
+        operateur: 'Opérateur',
+        comptable: 'Comptable',
+        chef_commercial: 'Chef commercial',
+        client: 'Client',
+    };
+    const labels = entries.map(([role, count]) => `${roleLabels[role] ?? role} (${count})`);
+    const values = entries.map(([, count]) => Number(count) || 0);
+
+    const total = values.reduce((sum, v) => sum + v, 0);
+    const emptyEl = document.getElementById('usersByRoleEmpty');
+    if (emptyEl) {
+        emptyEl.style.display = 'none';
+    }
+
+    if (total <= 0) {
+        ctx.style.display = 'none';
+        if (emptyEl) {
+            emptyEl.querySelector('p').textContent = 'Aucune donnée utilisateur';
+            emptyEl.style.display = 'block';
+        }
+    } else if (typeof Chart === 'undefined') {
+        ctx.style.display = 'none';
+        if (emptyEl) {
+            emptyEl.querySelector('p').textContent = 'Graphique indisponible (Chart.js non chargé)';
+            emptyEl.style.display = 'block';
+        }
+    } else {
+        ctx.style.display = 'block';
+
     const usersByRoleChart = new Chart(ctx.getContext('2d'), {
         type: 'doughnut',
         data: {
-            labels: [
-                @foreach($usersByRole as $role => $count)
-                    '{{ ucfirst($role) }} ({{ $count }})' @if(!$loop->last), @endif
-                @endforeach
-            ],
+            labels,
             datasets: [{
-                data: [
-                    @foreach($usersByRole as $count)
-                        {{ $count }} @if(!$loop->last), @endif
-                    @endforeach
-                ],
+                data: values,
                 backgroundColor: [
                     '#2563eb',
                     '#10b981',
@@ -679,6 +722,7 @@ if (ctx) {
             cutout: '65%'
         }
     });
+    }
 }
 </script>
 @endpush

@@ -62,6 +62,21 @@
                     </div>
                     <i class="fas fa-chevron-down" style="color: white;"></i>
                 </div>
+                <div class="dropdown-menu-custom" id="userDropdown" style="position:absolute; top:100%; right:0; background:white; border:1px solid rgba(255,255,255,0.2); border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,0.2); min-width:220px; margin-top:10px; display:none; overflow:hidden;">
+                    <a href="{{ route('profile.show') }}" class="dropdown-item-custom" style="display:block; padding:12px 16px; text-decoration:none; color:#111827;">
+                        <i class="fas fa-user-circle me-2"></i> Mon Profil
+                    </a>
+                    <a href="{{ route('operateur.dashboard') }}" class="dropdown-item-custom" style="display:block; padding:12px 16px; text-decoration:none; color:#111827;">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                    <hr style="margin: 0; border-color: #e5e7eb;">
+                    <form method="POST" action="{{ route('logout') }}" style="margin: 0;">
+                        @csrf
+                        <button type="submit" class="dropdown-item-custom" style="width: 100%; padding:12px 16px; text-align:left; border:none; background:none; color:#111827;">
+                            <i class="fas fa-sign-out-alt me-2"></i> Déconnexion
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </nav>
@@ -74,7 +89,22 @@
         @yield('content')
     </main>
 
-    <script>function toggleDropdown() {}</script>
+    <script>
+        function toggleDropdown() {
+            const dropdown = document.getElementById('userDropdown');
+            if (!dropdown) return;
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
+
+        document.addEventListener('click', function (event) {
+            const trigger = document.querySelector('.user-trigger');
+            const dropdown = document.getElementById('userDropdown');
+            if (!trigger || !dropdown) return;
+            if (!trigger.contains(event.target) && !dropdown.contains(event.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+    </script>
     @stack('scripts')
 </body>
 </html>

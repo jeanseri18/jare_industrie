@@ -53,6 +53,16 @@
                             <strong>Mode de paiement:</strong> {{ $souscription->mode_paiement ?? 'Non défini' }}
                         </div>
                     </div>
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <strong>Apport initial:</strong>
+                            @if(!empty($souscription->apport_initial_paye_par_client))
+                                Oui
+                            @else
+                                Non applicable
+                            @endif
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -115,11 +125,14 @@
     <div class="row">
         <div class="col-12">
             <div class="data-table-container">
-                <div class="card-header-custom">
-                    <h5 class="card-title-custom">
+                <div class="card-header-custom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title-custom mb-0">
                         <i class="fas fa-list"></i>
                         Historique des paiements
                     </h5>
+                    <a href="{{ route('comptable.souscriptions.etat-versements', $souscription) }}" target="_blank" class="btn btn-primary btn-sm">
+                        <i class="fas fa-print"></i> Imprimer l'état des versements
+                    </a>
                 </div>
                 <div class="table-responsive">
                     <table class="table-custom">
@@ -169,6 +182,11 @@
                                 <td>{{ $paiement->comptable->name ?? 'Non assigné' }}</td>
                                 <td>
                                     <div class="btn-group">
+                                        @if($paiement->statut == 'payé')
+                                            <a href="{{ route('comptable.paiements.recu', $paiement) }}" target="_blank" class="btn btn-sm btn-dark" title="Imprimer le reçu">
+                                                <i class="fas fa-print"></i>
+                                            </a>
+                                        @endif
                                         @if($paiement->statut == 'en_attente')
                                             <form action="{{ route('comptable.paiements.valider', $paiement) }}" method="POST" style="display: inline;">
                                                 @csrf

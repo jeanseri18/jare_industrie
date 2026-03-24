@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class BienImmobilier extends Model
 {
@@ -83,5 +84,12 @@ class BienImmobilier extends Model
     public function projet(): BelongsTo
     {
         return $this->belongsTo(Projet::class, 'idprojet');
+    }
+
+    public function mutuelles(): BelongsToMany
+    {
+        return $this->belongsToMany(Mutuelle::class, 'bien_immobilier_mutuelle')
+                    ->withPivot('prix_special')
+                    ->withTimestamps();
     }
 }

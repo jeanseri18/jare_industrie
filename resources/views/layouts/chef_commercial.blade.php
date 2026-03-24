@@ -57,7 +57,8 @@
         </div>
         <ul class="nav-menu">
             <li><a class="nav-link {{ request()->routeIs('chef_commercial.dashboard') ? 'active' : '' }}" href="{{ route('chef_commercial.dashboard') }}"><i class="fa-solid fa-chart-line"></i> Tableau de bord</a></li>
-            <li><a class="nav-link {{ request()->routeIs('chef_commercial.souscriptions.corrigees') ? 'active' : '' }}" href="{{ route('chef_commercial.souscriptions.corrigees') }}"><i class="fa-solid fa-list-check"></i> Liste des souscriptions corrigées</a></li>
+            <li><a class="nav-link {{ request()->routeIs('chef_commercial.souscriptions.corrigees') ? 'active' : '' }}" href="{{ route('chef_commercial.souscriptions.corrigees') }}"><i class="fa-solid fa-list-check"></i> Souscriptions à corriger</a></li>
+            <li><a class="nav-link {{ request()->routeIs('chef_commercial.souscriptions.corrige') ? 'active' : '' }}" href="{{ route('chef_commercial.souscriptions.corrige') }}"><i class="fa-solid fa-check-double"></i> Souscriptions corrigées</a></li>
             <li><a class="nav-link {{ request()->routeIs('chef_commercial.souscriptions.create') ? 'active' : '' }}" href="{{ route('chef_commercial.souscriptions.create') }}"><i class="fa-solid fa-plus-circle"></i> Nouvelle souscription</a></li>
         </ul>
         <div class="sidebar-footer">Jare Industries © {{ date('Y') }}</div>
@@ -75,6 +76,13 @@
                 <div class="user-name">{{ Auth::user()->name ?? 'Utilisateur' }}</div>
                 <div class="user-avatar">{{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}</div>
                 <div id="userMenu" class="dropdown-menu-custom">
+                    <a href="{{ route('profile.show') }}" class="dropdown-item-custom">
+                        <i class="fa-solid fa-user-circle me-2"></i> Mon Profil
+                    </a>
+                    <a href="{{ route('chef_commercial.dashboard') }}" class="dropdown-item-custom">
+                        <i class="fa-solid fa-chart-line me-2"></i> Dashboard
+                    </a>
+                    <hr style="margin: 0; border-color: #e5e7eb;">
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="dropdown-item-custom"><i class="fa-solid fa-right-from-bracket me-2"></i> Déconnexion</button>

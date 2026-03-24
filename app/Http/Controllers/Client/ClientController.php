@@ -4,251 +4,260 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Models\Client;
-use App\Models\Document;
-use App\Models\Notification;
-use App\Models\Paiement;
 use App\Models\Souscription;
+use App\Models\Paiement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
-class ClientController extends \App\Http\Controllers\Controller
+class ClientController extends Controller
 {
     public function __construct()
     {
         $this->middleware('auth');
     }
 
+    /**
+     * Afficher le dashboard client avec informations, apport initial, frais de dossier et souscriptions
+     */
     public function dashboard()
     {
-        $client = Auth::user()->client;
+        $user = Auth::user();
         
-        if (!$client) {
-            abort(404, 'Client non trouvé');
+        // Récupérer toutes les souscriptions du client
+        $souscriptions = Souscription::with(['projet', 'paiements', 'attributionLot'])
+            ->where('email', $user->email)
+            ->orWhere('nom_prenom', 'LIKE', "%{$user->nom}%")
+            ->latest()
+            ->get();
+
+        // Récupérer les 5 dernières notifications (simulées pour l'instant comme dans notifications())
+        $notifications = $this->getRecentNotifications($souscriptions)->take(5);
+
+        // Statistiques pour le dashboard
+        $totalPaye = 0;
+        foreach($souscriptions as $s) {
+            $totalPaye += $s->paiements->where('statut', 'payé')->sum('montant');
         }
 
-        $souscriptions = $client->souscriptions()->latest()->take(5)->get();
-        $documents = $client->documents()->latest()->take(5)->get();
-        $paiements = $client->paiements()->latest()->take(5)->get();
-        $notifications = $client->notifications()->unread()->take(5)->get();
+        $stats = [
+            'total_souscriptions' => $souscriptions->count(),
+            'total_paye' => $totalPaye,
+            'nb_attributions' => $souscriptions->whereNotNull('attributionLot')->count(),
+        ];
 
-        return view('client.dashboard', compact('client', 'souscriptions', 'documents', 'paiements', 'notifications'));
+        return view('client.dashboard', compact('user', 'souscriptions', 'stats', 'notifications'));
     }
 
+    /**
+     * Helper pour générer les notifications dynamiques
+     */
+    private function getRecentNotifications($souscriptions)
+    {
+        $notifications = collect();
+
+        foreach ($souscriptions as $s) {
+            // Notification Attribution de lot
+            if ($s->attributionLot) {
+                $notifications->push((object)[
+                    'titre' => 'Lot attribué !',
+                    'message' => "Bonne nouvelle ! Le lot {$s->attributionLot->lot} (Îlot {$s->attributionLot->ilot}) vous a été attribué pour le projet {$s->projet->nom}.",
+                    'date' => $s->attributionLot->created_at->format('d/m/Y'),
+                    'relative' => $s->attributionLot->created_at->diffForHumans(),
+                    'icon' => 'fas fa-home',
+                    'color' => 'green'
+                ]);
+            }
+
+            // Notifications Paiements récents
+            foreach ($s->paiements->where('statut', 'payé')->sortByDesc('valide_at')->take(3) as $p) {
+                $notifications->push((object)[
+                    'titre' => 'Paiement validé',
+                    'message' => "Votre paiement de " . number_format($p->montant, 0, ',', ' ') . " FCFA ({$p->type}) a été validé par la comptabilité.",
+                    'date' => $p->valide_at->format('d/m/Y'),
+                    'relative' => $p->valide_at->diffForHumans(),
+                    'icon' => 'fas fa-check-circle',
+                    'color' => 'blue'
+                ]);
+            }
+
+            // Notification Dossier Soldé / Lettre Définitive
+            if ($s->statut === 'SOLD') {
+                $notifications->push((object)[
+                    'titre' => 'Dossier Soldé',
+                    'message' => "Félicitations ! Votre dossier {$s->ref_souscription} est entièrement soldé. Votre lettre définitive est en cours de génération.",
+                    'date' => $s->updated_at->format('d/m/Y'),
+                    'relative' => $s->updated_at->diffForHumans(),
+                    'icon' => 'fas fa-certificate',
+                    'color' => 'purple'
+                ]);
+            }
+        }
+
+        return $notifications->sortByDesc(function($n) {
+            return \Carbon\Carbon::createFromFormat('d/m/Y', $n->date);
+        });
+    }
+
+    /**
+     * Afficher l'historique des paiements
+     */
+    public function historique()
+    {
+        $user = Auth::user();
+        
+        // Récupérer toutes les souscriptions du client
+        $souscriptions = Souscription::where('email', $user->email)
+            ->orWhere('nom_prenom', 'LIKE', "%{$user->nom}%")
+            ->get();
+
+        // Récupérer tous les paiements
+        $paiements = Paiement::whereIn('dossier_id', $souscriptions->pluck('id'))
+            ->with('souscription')
+            ->latest('date_paiement')
+            ->paginate(10);
+
+        return view('client.historique', compact('paiements'));
+    }
+
+    /**
+     * Afficher la liste des souscriptions du client
+     */
+    public function souscriptions()
+    {
+        $user = Auth::user();
+        $souscriptions = Souscription::with(['projet', 'paiements', 'attributionLot'])
+            ->where('email', $user->email)
+            ->orWhere('nom_prenom', 'LIKE', "%{$user->nom}%")
+            ->latest()
+            ->paginate(10);
+
+        return view('client.souscriptions', compact('souscriptions'));
+    }
+
+    /**
+     * Afficher les documents du client
+     */
     public function documents()
     {
-        $client = Auth::user()->client;
-        
-        if (!$client) {
-            abort(404, 'Client non trouvé');
-        }
-
-        $documents = $client->documents()
+        $user = Auth::user();
+        $souscriptions = Souscription::with(['projet', 'attributionLot'])
+            ->where('email', $user->email)
+            ->orWhere('nom_prenom', 'LIKE', "%{$user->nom}%")
             ->latest()
-            ->paginate(10);
+            ->get();
 
-        return view('client.documents.index', compact('documents'));
+        return view('client.documents', compact('souscriptions'));
     }
 
-    public function createDocument()
-    {
-        $client = Auth::user()->client;
-        
-        if (!$client) {
-            abort(404, 'Client non trouvé');
-        }
-
-        return view('client.documents.create', compact('client'));
-    }
-
-    public function storeDocument(Request $request)
-    {
-        $client = Auth::user()->client;
-        
-        if (!$client) {
-            abort(404, 'Client non trouvé');
-        }
-
-        $validated = $request->validate([
-            'titre' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'fichier' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240', // 10MB max
-        ]);
-
-        // Handle file upload
-        if ($request->hasFile('fichier')) {
-            $file = $request->file('fichier');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $path = $file->storeAs('documents/' . $client->id, $filename, 'public');
-            
-            $validated['chemin_fichier'] = $path;
-            $validated['nom_fichier'] = $filename;
-            $validated['type_fichier'] = $file->getClientOriginalExtension();
-            $validated['taille_fichier'] = $file->getSize();
-        }
-
-        $validated['client_id'] = $client->id;
-        $validated['date_upload'] = now();
-
-        Document::create($validated);
-
-        return redirect()->route('client.documents')->with('success', 'Document téléchargé avec succès');
-    }
-
-    public function destroyDocument(Document $document)
-    {
-        $client = Auth::user()->client;
-        
-        if (!$client || $document->client_id !== $client->id) {
-            abort(403, 'Non autorisé');
-        }
-
-        // Delete the file from storage
-        if ($document->chemin_fichier && file_exists(storage_path('app/public/' . $document->chemin_fichier))) {
-            unlink(storage_path('app/public/' . $document->chemin_fichier));
-        }
-
-        $document->delete();
-
-        return redirect()->route('client.documents')->with('success', 'Document supprimé avec succès');
-    }
-
-    public function paiements()
-    {
-        $client = Auth::user()->client;
-        
-        if (!$client) {
-            abort(404, 'Client non trouvé');
-        }
-
-        $paiements = $client->paiements()
-            ->latest()
-            ->paginate(10);
-
-        return view('client.paiements.index', compact('paiements'));
-    }
-
-    public function createPaiement()
-    {
-        $client = Auth::user()->client;
-        
-        if (!$client) {
-            abort(404, 'Client non trouvé');
-        }
-
-        return view('client.paiements.create', compact('client'));
-    }
-
-    public function storePaiement(Request $request)
-    {
-        $client = Auth::user()->client;
-        
-        if (!$client) {
-            abort(404, 'Client non trouvé');
-        }
-
-        $validated = $request->validate([
-            'montant' => 'required|numeric|min:0.01',
-            'methode_paiement' => 'required|string|in:virement,carte,cash',
-            'reference_paiement' => 'required|string|max:255',
-            'observations' => 'nullable|string',
-            'date_paiement' => 'required|date',
-        ]);
-
-        $validated['client_id'] = $client->id;
-        $validated['user_id'] = Auth::id();
-        $validated['statut'] = 'en_attente';
-        $validated['type'] = 'frais_souscription';
-
-        Paiement::create($validated);
-
-        return redirect()->route('client.paiements')->with('success', 'Paiement enregistré avec succès. Il sera vérifié par notre équipe.');
-    }
-
+    /**
+     * Afficher les notifications
+     */
     public function notifications()
     {
-        $client = Auth::user()->client;
+        $user = Auth::user();
         
-        if (!$client) {
-            abort(404, 'Client non trouvé');
+        // Récupérer les souscriptions du client
+        $souscriptions = Souscription::where('email', $user->email)
+            ->orWhere('nom_prenom', 'LIKE', "%{$user->nom}%")
+            ->get();
+
+        // Créer des notifications basées sur les événements
+        $notifications = collect();
+
+        // Notifications pour frais de dossier
+        foreach ($souscriptions as $souscription) {
+            $paiementsFraisDossier = Paiement::where('dossier_id', $souscription->id)
+                ->where('type', 'frais_dossier')
+                ->get();
+
+            $totalPaye = $paiementsFraisDossier->where('statut', 'Soldé')->sum('montant');
+            $fraisDossier = $souscription->frais_souscription ?? 0;
+
+            if ($totalPaye < $fraisDossier) {
+                $notifications->push((object)[
+                    'id' => 'fd_' . $souscription->id,
+                    'type' => 'paiement_frais',
+                    'titre' => 'Paiement des frais de dossier',
+                    'message' => "La comptabilité a traité 2.500 FCFA correspondant à votre frais de dossier pour un termement le 3-phase dans le cadre du projet Cité du Salut.",
+                    'statut' => 'non_lu',
+                    'date' => $souscription->created_at->format('d/m/Y'),
+                    'relative' => 'il y a 3 jours',
+                    'icon' => 'fas fa-exclamation-triangle',
+                    'color' => 'orange'
+                ]);
+            }
         }
 
-        $notifications = $client->notifications()
+        // Notification pour échec de paiement
+        $notifications->push((object)[
+            'id' => 'ep_1',
+            'type' => 'echec_paiement',
+            'titre' => 'Échec de paiement',
+            'message' => "Le paiement de 670.000 FCFA correspondant à votre apport initial n'a pas pu être pris en charge pour un termement de 3 phase dans le cadre de projet Cité du Salut",
+            'statut' => 'non_lu',
+            'date' => now()->subDays(2)->format('d/m/Y'),
+            'relative' => 'il y a 2 jours',
+            'icon' => 'fas fa-times-circle',
+            'color' => 'red'
+        ]);
+
+        // Notification pour paiement réussi
+        $paiementReussi = Paiement::whereIn('dossier_id', $souscriptions->pluck('id'))
+            ->where('statut', 'Soldé')
             ->latest()
-            ->paginate(15);
+            ->first();
 
-        return view('client.notifications.index', compact('notifications'));
-    }
-
-    public function markNotificationAsRead(Notification $notification)
-    {
-        $client = Auth::user()->client;
-        
-        if ($notification->client_id !== $client->id) {
-            abort(403, 'Non autorisé');
+        if ($paiementReussi) {
+            $notifications->push((object)[
+                'id' => 'ps_' . $paiementReussi->id,
+                'type' => 'paiement_succes',
+                'titre' => 'Paiement de l\'apport initial avec succès',
+                'message' => "Vous avez versé la somme de " . number_format($paiementReussi->montant, 0, ',', ' ') . " FCFA au titre de votre apport initial sur la logisteria à raison de 3 phase dans le cadre du projet Cité du Salut.",
+                'statut' => 'lu',
+                'date' => $paiementReussi->date_paiement->format('d/m/Y'),
+                'relative' => 'il y a ' . $paiementReussi->date_paiement->diffInDays(now()) . ' jours',
+                'icon' => 'fas fa-check-circle',
+                'color' => 'blue'
+            ]);
         }
 
-        $notification->update(['lu' => true]);
-
-        return redirect()->back()->with('success', 'Notification marquée comme lue');
+        return view('client.notifications', compact('notifications'));
     }
 
-    public function markAllNotificationsAsRead()
-    {
-        $client = Auth::user()->client;
-        
-        $client->notifications()->unread()->update(['lu' => true]);
-
-        return redirect()->back()->with('success', 'Toutes les notifications ont été marquées comme lues');
-    }
-
+    /**
+     * Afficher le profil du client
+     */
     public function profile()
     {
-        $client = Auth::user()->client;
+        $user = Auth::user();
         
-        if (!$client) {
-            abort(404, 'Client non trouvé');
-        }
-
-        return view('client.profile.show', compact('client'));
+        return view('client.profile', compact('user'));
     }
 
-    public function editProfile()
-    {
-        $client = Auth::user()->client;
-        
-        if (!$client) {
-            abort(404, 'Client non trouvé');
-        }
-
-        return view('client.profile.edit', compact('client'));
-    }
-
+    /**
+     * Mettre à jour le profil du client
+     */
     public function updateProfile(Request $request)
     {
-        $client = Auth::user()->client;
-        
-        if (!$client) {
-            abort(404, 'Client non trouvé');
-        }
+        $user = Auth::user();
 
         $validated = $request->validate([
             'nom' => 'required|string|max:255',
             'prenom' => 'required|string|max:255',
             'telephone' => 'required|string|max:20',
-            'adresse' => 'required|string|max:500',
+            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
         ]);
 
-        $client->update($validated);
+        $user->update($validated);
 
         return redirect()->route('client.profile')->with('success', 'Profil mis à jour avec succès');
     }
 
-    public function changePassword()
-    {
-        return view('client.profile.change-password');
-    }
-
+    /**
+     * Mettre à jour le mot de passe
+     */
     public function updatePassword(Request $request)
     {
         $request->validate([

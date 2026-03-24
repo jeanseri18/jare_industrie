@@ -26,7 +26,7 @@
             $dateNaissanceCarbon = ($client->date_naissance ?? $souscription->date_naissance);
             $dateNaissanceIso = optional($dateNaissanceCarbon)->format('Y-m-d');
             $lieuNaissance = $client->lieu_naissance ?? $souscription->lieu_naissance;
-            $telephone = $client->telephone ?? null;
+            $telephone = $souscription->telephone ?? $client->telephone ?? null;
             $email = $client->email ?? $souscription->email;
             $residence = null; // pas de champ source, sera saisi ou pris de ValidationFinale
             $profession = null; // pas de champ source, sera saisi ou pris de ValidationFinale

@@ -43,6 +43,15 @@ class AuthController extends Controller
 
         Auth::login($user);
 
+        if ($user->role !== User::ROLE_CLIENT && $user->requires_dg_validation && empty($user->email_verified_at)) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            return redirect()->route('login')->withErrors([
+                'email' => 'Votre compte est en attente de validation par le DG.',
+            ]);
+        }
+
         // Rediriger vers le tableau de bord approprié selon le rôle
         switch ($user->role) {
             case User::ROLE_DG:
@@ -82,6 +91,14 @@ class AuthController extends Controller
 
             // Vérifier si l'utilisateur est un client
             $user = Auth::user();
+            if ($user->role !== User::ROLE_CLIENT && $user->requires_dg_validation && empty($user->email_verified_at)) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                return redirect()->route('login')->withErrors([
+                    'email' => 'Votre compte est en attente de validation par le DG.',
+                ]);
+            }
             switch ($user->role) {
                 case User::ROLE_DG:
                     return redirect()->route('dg.dashboard');

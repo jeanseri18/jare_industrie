@@ -8,12 +8,17 @@ use App\Services\ActivityLogger;
 
 class PaiementObserver
 {
+    private function formatFcfa($montant): string
+    {
+        return number_format((float) $montant, 0, ',', ' ') . ' FCFA';
+    }
+
     /**
      * Handle the Paiement "created" event.
      */
     public function created(Paiement $paiement): void
     {
-        ActivityLogger::logModelEvent('created', $paiement, 'Paiement créé : ' . $paiement->reference . ' (' . $paiement->montant . '€)');
+        ActivityLogger::logModelEvent('created', $paiement, 'Paiement créé : ' . $paiement->reference . ' (' . $this->formatFcfa($paiement->montant) . ')');
     }
 
     /**
@@ -25,7 +30,7 @@ class PaiementObserver
         unset($changes['updated_at']);
         
         if (!empty($changes)) {
-            ActivityLogger::logModelEvent('updated', $paiement, 'Paiement modifié : ' . $paiement->reference . ' (' . $paiement->montant . '€)');
+            ActivityLogger::logModelEvent('updated', $paiement, 'Paiement modifié : ' . $paiement->reference . ' (' . $this->formatFcfa($paiement->montant) . ')');
             
             // Si le paiement passe à 'payé', vérifier si les frais de dossier sont complètement payés
             if (isset($changes['statut']) && $paiement->statut === 'payé') {
@@ -67,6 +72,6 @@ class PaiementObserver
      */
     public function deleted(Paiement $paiement): void
     {
-        ActivityLogger::logModelEvent('deleted', $paiement, 'Paiement supprimé : ' . $paiement->reference . ' (' . $paiement->montant . '€)');
+        ActivityLogger::logModelEvent('deleted', $paiement, 'Paiement supprimé : ' . $paiement->reference . ' (' . $this->formatFcfa($paiement->montant) . ')');
     }
 }

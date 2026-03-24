@@ -66,7 +66,7 @@
                                 <label for="role" class="form-label">Rôle</label>
                                 <select class="form-select" id="role" name="role" required>
                                     <option value="">Sélectionner un rôle</option>
-                                    <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>Administrateur</option>
+                                    <option value="admin_technique" {{ old('role', $user->role) == 'admin_technique' ? 'selected' : '' }}>Administrateur Technique</option>
                                     <option value="dg" {{ old('role', $user->role) == 'dg' ? 'selected' : '' }}>Directeur Général</option>
                                     <option value="comptable" {{ old('role', $user->role) == 'comptable' ? 'selected' : '' }}>Comptable</option>
                                     <option value="chef_commercial" {{ old('role', $user->role) == 'chef_commercial' ? 'selected' : '' }}>Chef Commercial</option>

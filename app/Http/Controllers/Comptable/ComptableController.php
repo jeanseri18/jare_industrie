@@ -8,6 +8,7 @@ use App\Models\Souscription;
 use App\Models\FraisDossier;
 use App\Models\ApportInitial;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class ComptableController extends Controller
@@ -184,10 +185,23 @@ class ComptableController extends Controller
 
     public function projetsSoldes(Request $request)
     {
+        // 1. Identifier et mettre à jour les souscriptions soldées
+        // On le fait sur toutes les souscriptions qui ont au moins un paiement validé
+        $souscriptionIdsWithPayments = Paiement::where('statut', 'payé')->distinct()->pluck('dossier_id');
+        $soldIds = [];
+        
+        $souscriptions = \App\Models\Souscription::whereIn('id', $souscriptionIdsWithPayments)->get();
+        foreach ($souscriptions as $s) {
+            $this->checkAndSetSoldStatus($s);
+            if ($s->statut === 'SOLD') {
+                $soldIds[] = $s->id;
+            }
+        }
+
+        // 2. Construire la requête pour afficher les paiements de ces dossiers soldés
         $query = Paiement::with(['souscription.client', 'comptable'])
-            ->whereHas('souscription', function($query) {
-                $query->where('statut', 'soldé');
-            });
+            ->whereIn('dossier_id', $soldIds)
+            ->where('statut', 'payé');
 
         // Recherche textuelle
         if ($request->filled('search')) {
@@ -240,7 +254,7 @@ class ComptableController extends Controller
 
         $paiement->update([
             'statut' => $request->statut,
-            'comptable_id' => auth()->id(),
+            'comptable_id' => Auth::id(),
             'valide_at' => $request->statut === 'payé' ? now() : null
         ]);
 
@@ -250,7 +264,7 @@ class ComptableController extends Controller
     public function validerPaiement(Request $request, Paiement $paiement)
     {
         $request->validate([
-            'mode' => 'required|in:ESPECES,VIREMENT,MOBILE_MONEY,TEMPERAMENT,CREDIT_BANCAIRE',
+            'mode' => 'required|in:ESPECES,VIREMENT,TEMPERAMENT,CREDIT_BANCAIRE,PRELEVEMENT_SOURCE',
             'preuve_paiement' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
             'montant' => 'nullable|numeric|min:1',
             'type' => 'nullable|in:FRAIS_DOSSIER,APPORT,PROJET'
@@ -261,24 +275,60 @@ class ComptableController extends Controller
             $preuvePath = $request->file('preuve_paiement')->store('preuves_paiements', 'public');
         }
 
+        $montant = $request->montant ?? $paiement->montant;
+        $type = $request->type ?? $paiement->type;
+        $souscription = $paiement->souscription;
+
+        if ($souscription) {
+            if ($type === 'FRAIS_DOSSIER') {
+                $frais = \App\Models\FraisDossier::where('id_souscription', $souscription->id)->first();
+                if ($frais && $montant > (float) $frais->montant_reste + ($paiement->statut === 'payé' ? $paiement->montant : 0)) {
+                    return redirect()->back()->with('error', "Le montant saisi dépasse le montant restant des frais de dossier.");
+                }
+            } elseif ($type === 'APPORT') {
+                $apport = \App\Models\ApportInitial::where('id_souscription', $souscription->id)->first();
+                if ($apport && $montant > (float) $apport->montant_reste + ($paiement->statut === 'payé' ? $paiement->montant : 0)) {
+                    return redirect()->back()->with('error', "Le montant saisi dépasse le montant restant de l'apport initial.");
+                }
+            } elseif ($type === 'PROJET') {
+                $totalPayeHorsFrais = \App\Models\Paiement::where('dossier_id', $souscription->id)
+                    ->where('statut', 'payé')
+                    ->where('id', '!=', $paiement->id)
+                    ->whereIn('type', ['PROJET', 'APPORT'])
+                    ->sum('montant');
+                $prixLogement = (float) ($souscription->prix_logement ?? 0);
+                $resteLogement = max($prixLogement - $totalPayeHorsFrais, 0);
+
+                if ($montant > $resteLogement) {
+                    return redirect()->back()->with('error', "Le montant saisi dépasse le montant restant du projet (" . number_format($resteLogement, 0, ',', ' ') . " FCFA).");
+                }
+            }
+        }
+
         $paiement->update([
             'statut' => 'payé',
-            'comptable_id' => auth()->id(),
+            'comptable_id' => Auth::id(),
             'valide_at' => now(),
             'mode' => $request->mode,
             'preuve_paiement' => $preuvePath,
-            'montant' => $request->montant ?? $paiement->montant,
-            'type' => $request->type ?? $paiement->type,
+            'montant' => $montant,
+            'type' => $type,
         ]);
 
-        return redirect()->back()->with('success', 'Paiement validé avec succès.');
+        // Déclenchement de la vérification du statut global
+        if ($paiement->souscription) {
+            $this->checkAndSetSoldStatus($paiement->souscription);
+        }
+
+        return redirect()->back()->with('success', 'Paiement validé avec succès.')
+            ->with('receipt_url', route('comptable.paiements.recu', $paiement));
     }
 
     public function annulerPaiement(Paiement $paiement)
     {
         $paiement->update([
             'statut' => 'annulé',
-            'comptable_id' => auth()->id(),
+            'comptable_id' => Auth::id(),
             'valide_at' => null
         ]);
 
@@ -290,10 +340,14 @@ class ComptableController extends Controller
         $request->validate([
             'type' => 'required|in:FRAIS_DOSSIER,APPORT,PROJET',
             'montant' => 'required|numeric|min:1',
-            'mode' => 'required|in:ESPECES,VIREMENT,MOBILE_MONEY,TEMPERAMENT,CREDIT_BANCAIRE',
+            'mode' => 'required|in:ESPECES,VIREMENT,TEMPERAMENT,CREDIT_BANCAIRE,PRELEVEMENT_SOURCE',
             'date_paiement' => 'required|date',
             'preuve_paiement' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240'
         ]);
+
+        if ($request->type === 'APPORT' && empty($souscription->apport_initial_paye_par_client)) {
+            return redirect()->back()->with('error', "Apport initial non applicable : ce client ne paie pas d'apport initial.");
+        }
 
         // Générer une référence unique
         $prefixes = [
@@ -322,16 +376,30 @@ class ComptableController extends Controller
                 return redirect()->back()->with('error', 'Le montant saisi dépasse le montant restant des frais de dossier.');
             }
         } elseif ($request->type === 'APPORT') {
+            if (empty($souscription->apport_initial_paye_par_client) || (float)($souscription->apport_initial ?? 0) <= 0) {
+                return redirect()->back()->with('error', "Apport initial non applicable pour cette souscription.");
+            }
             $apportInitial = \App\Models\ApportInitial::where('id_souscription', $souscription->id)->first();
             if (!$apportInitial) {
                 return redirect()->back()->with('error', 'Apport initial introuvable pour cette souscription.');
             }
             if ($montant > (float) $apportInitial->montant_reste) {
-                return redirect()->back()->with('error', "Le montant saisi dépasse le montant restant de l'apport initial.");
+                return redirect()->back()->with('error', "Le montant saisi dépasse le montant restant de l'apport initial (" . number_format($apportInitial->montant_reste, 0, ',', ' ') . " FCFA).");
+            }
+        } elseif ($request->type === 'PROJET') {
+            $totalPayeHorsFrais = \App\Models\Paiement::where('dossier_id', $souscription->id)
+                ->where('statut', 'payé')
+                ->whereIn('type', ['PROJET', 'APPORT'])
+                ->sum('montant');
+            $prixLogement = (float) ($souscription->prix_logement ?? 0);
+            $resteLogement = max($prixLogement - $totalPayeHorsFrais, 0);
+
+            if ($montant > $resteLogement) {
+                return redirect()->back()->with('error', "Le montant saisi dépasse le montant restant du projet (" . number_format($resteLogement, 0, ',', ' ') . " FCFA).");
             }
         }
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($request, $souscription, $reference, $preuvePath, $montant, $fraisDossier, $apportInitial) {
+        $paiement = \Illuminate\Support\Facades\DB::transaction(function () use ($request, $souscription, $reference, $preuvePath, $montant, $fraisDossier, $apportInitial) {
             // Créer l'enregistrement de paiement
             $paiement = \App\Models\Paiement::create([
                 'dossier_id' => $souscription->id,
@@ -341,7 +409,7 @@ class ComptableController extends Controller
                 'reference' => $reference,
                 'date_paiement' => $request->date_paiement,
                 'statut' => 'payé',
-                'comptable_id' => auth()->id(),
+                'comptable_id' => Auth::id(),
                 'valide_at' => now(),
                 'cree_at' => now(),
                 'preuve_paiement' => $preuvePath
@@ -351,7 +419,7 @@ class ComptableController extends Controller
             if ($request->type === 'FRAIS_DOSSIER' && $fraisDossier) {
                 $fraisDossier->montant_paye = (float) $fraisDossier->montant_paye + $montant;
                 $fraisDossier->montant_reste = max(((float) $fraisDossier->montant - (float) $fraisDossier->montant_paye), 0);
-                $fraisDossier->id_comptable = auth()->id();
+                $fraisDossier->id_comptable = Auth::id();
                 $fraisDossier->save();
 
                 // Mise à jour du statut de la souscription si les frais de dossier sont soldés
@@ -362,7 +430,7 @@ class ComptableController extends Controller
             } elseif ($request->type === 'APPORT' && $apportInitial) {
                 $apportInitial->montant_paye = (float) $apportInitial->montant_paye + $montant;
                 $apportInitial->montant_reste = max(((float) $apportInitial->montant - (float) $apportInitial->montant_paye), 0);
-                $apportInitial->id_comptable = auth()->id();
+                $apportInitial->id_comptable = Auth::id();
                 $apportInitial->save();
 
                 // Mise à jour du statut de la souscription si l'apport initial est soldé
@@ -370,10 +438,51 @@ class ComptableController extends Controller
                     $souscription->statut = 'APPORT_OK';
                     $souscription->save();
                 }
+            } elseif ($request->type === 'PROJET') {
+                // Si on paye "PROJET", on considère que cela réduit aussi l'apport initial (qui fait partie du prix)
+                $apport = $apportInitial ?: \App\Models\ApportInitial::where('id_souscription', $souscription->id)->first();
+                if ($apport) {
+                    $resteApport = max((float)$apport->montant - (float)$apport->montant_paye, 0);
+                    if ($resteApport > 0) {
+                        $reduction = min($montant, $resteApport);
+                        $apport->montant_paye = (float)$apport->montant_paye + $reduction;
+                        $apport->montant_reste = max(((float)$apport->montant - (float)$apport->montant_paye), 0);
+                        $apport->id_comptable = Auth::id();
+                        $apport->save();
+                        if ($apport->montant_reste <= 0) {
+                            $souscription->statut = 'APPORT_OK';
+                            $souscription->save();
+                        }
+                    }
+                }
             }
+
+            // Si les paiements PROJET+APPORT soldent le prix du logement, alors l'apport restant (s'il en reste) est considéré soldé
+            $totalPayeHorsFrais = \App\Models\Paiement::where('dossier_id', $souscription->id)
+                ->where('statut', 'payé')
+                ->whereIn('type', ['PROJET','APPORT'])
+                ->sum('montant');
+            $prixLogement = (float) ($souscription->prix_logement ?? 0);
+            if ($prixLogement > 0 && $totalPayeHorsFrais >= $prixLogement) {
+                $apport = \App\Models\ApportInitial::where('id_souscription', $souscription->id)->first();
+                if ($apport && (float)$apport->montant_reste > 0) {
+                    $apport->montant_paye = (float)$apport->montant;
+                    $apport->montant_reste = 0;
+                    $apport->id_comptable = Auth::id();
+                    $apport->save();
+                    $souscription->statut = 'APPORT_OK';
+                    $souscription->save();
+                }
+            }
+
+            // Vérification globale si TOUT est soldé (Logement + Frais)
+            $this->checkAndSetSoldStatus($souscription);
+
+            return $paiement;
         });
 
-        return redirect()->back()->with('success', 'Paiement créé avec succès.');
+        return redirect()->back()->with('success', 'Paiement créé avec succès.')
+            ->with('receipt_url', route('comptable.paiements.recu', $paiement));
     }
 
     public function voirPaiementsSouscription(Request $request, Souscription $souscription)
@@ -432,7 +541,7 @@ class ComptableController extends Controller
             }
 
             // Créer le paiement apport initial
-            if ($souscription->apport_initial > 0) {
+            if ($souscription->apport_initial_paye_par_client && $souscription->apport_initial > 0) {
                 Paiement::create([
                     'dossier_id' => $souscription->id,
                     'type' => 'apport_initial',
@@ -449,28 +558,65 @@ class ComptableController extends Controller
 
     public function dashboard()
     {
-        // Total encaissé (tous paiements validés)
+        // 1. Global Stats
         $totalEncaisse = Paiement::where('statut', 'payé')->sum('montant');
         $totalEncaisseShort = $this->formatFcfaShort($totalEncaisse);
-    
-        // Frais de dossier validés vs total
-        $fraisDossierValides = Paiement::where('type', 'FRAIS_DOSSIER')->where('statut', 'payé')->count();
-        $fraisDossierTotal = Paiement::where('type', 'FRAIS_DOSSIER')->count();
-    
-        // Suivi paiements projet: souscriptions avec paiements en cours (montant restant > 0 et montant payé > 0)
-        $souscriptionsForProgress = Souscription::select('id', 'prix_logement')
+        
+        // 2. Frais Dossier Stats
+        $fraisDossierTotalAmount = FraisDossier::sum('montant');
+        $fraisDossierPaye = FraisDossier::sum('montant_paye');
+        $fraisDossierReste = FraisDossier::sum('montant_reste');
+        $fraisDossierCountTotal = FraisDossier::count();
+        $fraisDossierCountSoldes = FraisDossier::where('montant_reste', 0)->where('montant_paye', '>', 0)->count();
+
+        // 3. Apport Initial Stats
+        $apportInitialTotalAmount = ApportInitial::sum('montant');
+        $apportInitialPaye = ApportInitial::sum('montant_paye');
+        $apportInitialReste = ApportInitial::sum('montant_reste');
+        $apportInitialCountTotal = ApportInitial::count();
+        $apportInitialCountSoldes = ApportInitial::where('montant_reste', 0)->where('montant_paye', '>', 0)->count();
+
+        // 3b. Suivi Paiement Projet Stats
+        $projetTotalAttendu = Souscription::sum('prix_logement');
+        $projetTotalPaye = Paiement::where('statut', 'payé')->whereIn('type', ['PROJET', 'APPORT'])->sum('montant');
+        $projetTotalReste = max($projetTotalAttendu - $projetTotalPaye, 0);
+        $projetCountTotal = Souscription::count();
+        $projetCountSoldes = Souscription::with(['paiements'])
+            ->get()
+            ->filter(function ($s) {
+                $totalPayes = $s->paiements()->where('statut', 'payé')->whereIn('type', ['PROJET', 'APPORT'])->sum('montant');
+                return ($s->prix_logement ?? 0) > 0 && $totalPayes >= $s->prix_logement;
+            })
+            ->count();
+
+        // 4. Souscriptions Stats
+        $souscriptionsTotalCount = Souscription::count();
+        
+        // On calcule les dossiers soldés (prix logement + frais dossier <= paiements payés)
+        $clientsSoldes = Souscription::where('statut', 'SOLD')->count(); 
+        
+        // En cours: (Paying but not soldé)
+        $souscriptionsForProgress = Souscription::where('statut', '!=', 'SOLD')
             ->with(['paiements' => function ($q) {
                 $q->where('statut', 'payé');
             }])->get();
+            
         $paiementsEnCours = $souscriptionsForProgress->filter(function ($s) {
             $paye = $s->paiements->sum('montant');
-            return $paye > 0 && ($s->prix_logement ?? 0) > $paye;
+            return $paye > 0;
         })->count();
-    
-        // Clients soldés (souscriptions avec statut "soldé")
-        $clientsSoldes = Souscription::where('statut', 'soldé')->count();
-    
-        // Données des graphiques: montant encaissé par projet
+        
+        $souscriptionsEnAttente = $souscriptionsTotalCount - $clientsSoldes - $paiementsEnCours;
+
+        // Total Restant Global (Sum of all remaining amounts)
+        // We approximate Total Expected = Sum(Prix Logement) + Sum(Frais Dossier)
+        // This assumes Prix Logement covers Apport Initial and regular payments.
+        $totalPrixLogements = Souscription::sum('prix_logement');
+        $totalFraisDossier = FraisDossier::sum('montant');
+        $totalAttendu = $totalPrixLogements + $totalFraisDossier;
+        $totalRestant = $totalAttendu - $totalEncaisse;
+
+        // 5. Charts
         $byProject = DB::table('paiements')
             ->join('souscriptions', 'paiements.dossier_id', '=', 'souscriptions.id')
             ->join('projets', 'souscriptions.programme', '=', 'projets.id')
@@ -481,16 +627,17 @@ class ComptableController extends Controller
     
         $barChartLabels = $byProject->pluck('projet_nom')->toArray();
         $barChartValues = $byProject->pluck('total')->map(function ($v) { return (float) $v; })->toArray();
+
+        // Projects list for filter
+        $projets = \App\Models\Projet::all();
     
         return view('comptable.dashboard', compact(
-            'totalEncaisse',
-            'totalEncaisseShort',
-            'fraisDossierValides',
-            'fraisDossierTotal',
-            'paiementsEnCours',
-            'clientsSoldes',
-            'barChartLabels',
-            'barChartValues'
+            'totalEncaisse', 'totalEncaisseShort', 'totalRestant',
+            'fraisDossierTotalAmount', 'fraisDossierPaye', 'fraisDossierReste', 'fraisDossierCountTotal', 'fraisDossierCountSoldes',
+            'apportInitialTotalAmount', 'apportInitialPaye', 'apportInitialReste', 'apportInitialCountTotal', 'apportInitialCountSoldes',
+            'projetTotalAttendu', 'projetTotalPaye', 'projetTotalReste', 'projetCountTotal', 'projetCountSoldes',
+            'souscriptionsEnAttente', 'paiementsEnCours', 'clientsSoldes',
+            'barChartLabels', 'barChartValues', 'projets'
         ));
     }
 
@@ -512,7 +659,7 @@ class ComptableController extends Controller
     {
         $request->validate([
             'montant' => ['required','numeric','min:1'],
-            'mode' => 'required|in:ESPECES,VIREMENT,MOBILE_MONEY,TEMPERAMENT,CREDIT_BANCAIRE',
+            'mode' => 'required|in:ESPECES,VIREMENT,TEMPERAMENT,CREDIT_BANCAIRE,PRELEVEMENT_SOURCE',
             'preuve_paiement' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
 
@@ -529,11 +676,10 @@ class ComptableController extends Controller
         // Mettre à jour les montants du frais de dossier
         $fraisDossier->montant_paye = (float) $fraisDossier->montant_paye + $montant;
         $fraisDossier->montant_reste = max(((float) $fraisDossier->montant - (float) $fraisDossier->montant_paye), 0);
-        $fraisDossier->id_comptable = auth()->id();
+        $fraisDossier->id_comptable = Auth::id();
         $fraisDossier->save();
 
-        // Créer l'enregistrement de paiement avec preuve
-        Paiement::create([
+        $paiement = Paiement::create([
             'dossier_id' => $fraisDossier->souscription->id ?? $fraisDossier->id_souscription,
             'type' => 'FRAIS_DOSSIER',
             'montant' => $montant,
@@ -541,7 +687,7 @@ class ComptableController extends Controller
             'reference' => 'FRD-' . ($fraisDossier->souscription->ref_souscription ?? $fraisDossier->id_souscription) . '-' . time(),
             'date_paiement' => now(),
             'statut' => 'payé',
-            'comptable_id' => auth()->id(),
+            'comptable_id' => Auth::id(),
             'valide_at' => now(),
             'cree_at' => now(),
             'preuve_paiement' => $preuvePath,
@@ -549,22 +695,113 @@ class ComptableController extends Controller
 
         // Mise à jour du statut de la souscription si les frais de dossier sont soldés
         if ((float) $fraisDossier->montant_reste <= 0) {
-            if ($fraisDossier->souscription) {
-                $fraisDossier->souscription->statut = 'FRAIS_OK';
-                $fraisDossier->souscription->save();
-            } else {
-                \App\Models\Souscription::where('id', $fraisDossier->id_souscription)->update(['statut' => 'FRAIS_OK']);
+            $souscription = $fraisDossier->souscription ?: \App\Models\Souscription::find($fraisDossier->id_souscription);
+            if ($souscription) {
+                $souscription->statut = 'FRAIS_OK';
+                $souscription->save();
+
+                $this->checkAndSetSoldStatus($souscription);
             }
         }
 
-        return redirect()->back()->with('success', 'Paiement enregistré avec succès.');
+        return redirect()->back()->with('success', 'Paiement enregistré avec succès.')
+            ->with('receipt_url', route('comptable.paiements.recu', $paiement));
+    }
+
+    public function recu(Paiement $paiement)
+    {
+        $paiement->load(['souscription.client', 'souscription.projet', 'comptable']);
+        return view('comptable.recu', compact('paiement'));
+    }
+
+    public function editionRecus(Request $request)
+    {
+        $query = Paiement::with(['souscription.client', 'souscription.projet', 'comptable'])
+            ->where('statut', 'payé');
+
+        // Filtre par client
+        if ($request->filled('search')) {
+             $search = $request->search;
+             $query->whereHas('souscription.client', function($q) use ($search) {
+                $q->where('nom_prenom', 'like', "%{$search}%")
+                  ->orWhere('ref_client', 'like', "%{$search}%");
+            });
+        }
+
+        // Filtre par période
+        if ($request->filled('date_debut')) {
+            $query->whereDate('date_paiement', '>=', $request->date_debut);
+        }
+        if ($request->filled('date_fin')) {
+            $query->whereDate('date_paiement', '<=', $request->date_fin);
+        }
+
+        $paiements = $query->latest('date_paiement')->paginate(20);
+
+        return view('comptable.edition-recus', compact('paiements'));
+    }
+
+    public function dossiersAnnules(Request $request)
+    {
+        $query = Souscription::with(['client', 'projet', 'paiements'])
+            ->where('statut', 'annulee');
+
+        // Recherche textuelle
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('ref_souscription', 'like', "%{$search}%")
+                  ->orWhereHas('client', function($q) use ($search) {
+                      $q->where('nom_prenom', 'like', "%{$search}%")
+                        ->orWhere('ref_client', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $dossiersAnnules = $query->latest()->paginate(20);
+
+        return view('comptable.dossiers-annules', compact('dossiersAnnules'));
+    }
+
+    public function rembourserDossier(Request $request, Souscription $souscription)
+    {
+        $request->validate([
+            'montant' => 'required|numeric|min:1',
+            'mode' => 'required|in:ESPECES,VIREMENT,CHEQUE',
+            'motif' => 'nullable|string'
+        ]);
+
+        // Vérifier que le montant à rembourser ne dépasse pas le total payé
+        $totalPaye = $souscription->paiements()->where('statut', 'payé')->sum('montant');
+        $totalRembourse = $souscription->paiements()->where('statut', 'rembourse')->sum('montant');
+        $resteARembourser = $totalPaye - $totalRembourse;
+
+        if ($request->montant > $resteARembourser) {
+            return back()->with('error', "Le montant saisi ({$request->montant}) dépasse le montant disponible à rembourser ({$resteARembourser}).");
+        }
+
+        // Créer un enregistrement de paiement négatif ou de type remboursement
+        Paiement::create([
+            'dossier_id' => $souscription->id,
+            'type' => 'REMBOURSEMENT',
+            'montant' => $request->montant, // On peut le garder positif et utiliser le type pour distinguer
+            'mode' => $request->mode,
+            'reference' => 'REMB-' . $souscription->ref_souscription . '-' . time(),
+            'date_paiement' => now(),
+            'statut' => 'rembourse',
+            'comptable_id' => Auth::id(),
+            'valide_at' => now(),
+            'cree_at' => now(),
+        ]);
+
+        return back()->with('success', 'Remboursement enregistré avec succès.');
     }
 
     public function payerApportInitial(Request $request, ApportInitial $apportInitial)
     {
         $request->validate([
             'montant' => ['required','numeric','min:1'],
-            'mode' => 'required|in:ESPECES,VIREMENT,MOBILE_MONEY,TEMPERAMENT,CREDIT_BANCAIRE',
+            'mode' => 'required|in:ESPECES,VIREMENT,TEMPERAMENT,CREDIT_BANCAIRE,PRELEVEMENT_SOURCE',
             'preuve_paiement' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
 
@@ -581,11 +818,10 @@ class ComptableController extends Controller
         // Mettre à jour les montants de l'apport initial
         $apportInitial->montant_paye = (float) $apportInitial->montant_paye + $montant;
         $apportInitial->montant_reste = max(((float) $apportInitial->montant - (float) $apportInitial->montant_paye), 0);
-        $apportInitial->id_comptable = auth()->id();
+        $apportInitial->id_comptable = Auth::id();
         $apportInitial->save();
 
-        // Créer l'enregistrement de paiement avec preuve
-        Paiement::create([
+        $paiement = Paiement::create([
             'dossier_id' => $apportInitial->souscription->id ?? $apportInitial->id_souscription,
             'type' => 'APPORT',
             'montant' => $montant,
@@ -593,7 +829,7 @@ class ComptableController extends Controller
             'reference' => 'APPORT-' . ($apportInitial->souscription->ref_souscription ?? $apportInitial->id_souscription) . '-' . time(),
             'date_paiement' => now(),
             'statut' => 'payé',
-            'comptable_id' => auth()->id(),
+            'comptable_id' => Auth::id(),
             'valide_at' => now(),
             'cree_at' => now(),
             'preuve_paiement' => $preuvePath,
@@ -601,14 +837,93 @@ class ComptableController extends Controller
 
         // Mise à jour du statut de la souscription si l'apport initial est soldé
         if ((float) $apportInitial->montant_reste <= 0) {
-            if ($apportInitial->souscription) {
-                $apportInitial->souscription->statut = 'APPORT_OK';
-                $apportInitial->souscription->save();
-            } else {
-                \App\Models\Souscription::where('id', $apportInitial->id_souscription)->update(['statut' => 'APPORT_OK']);
+            $souscription = $apportInitial->souscription ?: \App\Models\Souscription::find($apportInitial->id_souscription);
+            if ($souscription) {
+                $souscription->statut = 'APPORT_OK';
+                $souscription->save();
+
+                $this->checkAndSetSoldStatus($souscription);
             }
         }
 
-        return redirect()->back()->with('success', 'Paiement enregistré avec succès.');
+        return redirect()->back()->with('success', 'Paiement enregistré avec succès.')
+            ->with('receipt_url', route('comptable.paiements.recu', $paiement));
+    }
+
+    public function etatVersements(Souscription $souscription)
+    {
+        $souscription->load(['client', 'projet', 'attributionLot', 'paiements']);
+        $paiements = $souscription->paiements()->where('statut', 'payé')->orderBy('date_paiement')->get();
+        return view('documents.etat_versements', compact('souscription', 'paiements'));
+    }
+
+    /**
+     * Vérifie si une souscription est intégralement soldée et met à jour son statut
+     * ainsi que les enregistrements de frais et d'apport si nécessaire.
+     */
+    private function checkAndSetSoldStatus(Souscription $souscription): void
+    {
+        $totalPayesGlobal = Paiement::where('dossier_id', $souscription->id)
+            ->where('statut', 'payé')
+            ->sum('montant');
+            
+        $fraisTotal = FraisDossier::where('id_souscription', $souscription->id)->sum('montant');
+        $prixLogement = (float) ($souscription->prix_logement ?? 0);
+        $duGlobal = $prixLogement + (float) $fraisTotal;
+        
+        if ($duGlobal > 0 && $totalPayesGlobal >= $duGlobal) {
+            // 1. Mettre à jour le statut global de la souscription
+            $souscription->statut = 'SOLD';
+            $souscription->save();
+
+            // 2. Solder automatiquement l'apport initial s'il ne l'est pas
+            // Note: Les Frais de Dossier restent indépendants et ne sont PAS forcés à 0.
+            $apport = ApportInitial::where('id_souscription', $souscription->id)->first();
+            if ($apport && (float)$apport->montant_reste > 0) {
+                $apport->update([
+                    'montant_paye' => $apport->montant,
+                    'montant_reste' => 0,
+                    'id_comptable' => Auth::id() ?? $apport->id_comptable
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Liste des clients (Comptabilité)
+     */
+    public function clientsIndex(Request $request)
+    {
+        $query = \App\Models\Client::latest();
+        
+        // Filtres
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nom_prenom', 'like', "%{$search}%")
+                  ->orWhere('ref_client', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('telephone', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('date_creation')) {
+            $query->whereDate('created_at', $request->date_creation);
+        }
+
+        $clients = $query->paginate(10);
+        return view('comptable.clients.index', compact('clients'));
+    }
+
+    /**
+     * Détails d'un client (Comptabilité)
+     */
+    public function clientsShow(\App\Models\Client $client)
+    {
+        $client->load(['souscriptions' => function($query) {
+            $query->with(['projet', 'paiements'])->latest();
+        }, 'mutuelle']);
+        
+        return view('comptable.clients.show', compact('client'));
     }
 }

@@ -3,7 +3,6 @@
 @section('title','Corriger une souscription - Chef Commercial')
 @section('content')
 @php
-    // Assurer la disponibilité des données comme dans la création
     $projets = $projets ?? \App\Models\Projet::where('est_actif', true)->get();
     $biensImmobiliers = $biensImmobiliers ?? [];
     foreach ($projets as $projet) {
@@ -54,7 +53,6 @@
     .summary-box { background: #f8f9fa; border-left: 4px solid #2c5f8d; padding: 20px; border-radius: 6px; margin: 25px 0; }
     .summary-box h4 { color: #2c3e50; margin-bottom: 15px; font-size: 16px; }
     .summary-line { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: #555; }
-    .summary-line.total { font-weight: bold; font-size: 16px; color: #2c3e50; padding-top: 10px; border-top: 1px solid #ddd; margin-top: 10px; }
     .warning-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 6px; margin: 20px 0; font-size: 13px; color: #856404; }
     .buttons { display: flex; justify-content: space-between; gap: 15px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; }
     button { padding: 14px 30px; border: none; border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; flex: 1; }
@@ -64,7 +62,6 @@
     .btn-primary:hover { background: #234a6e; }
     .success-screen { display: none; text-align: center; padding: 60px 30px; }
     .success-screen.active { display: block; }
-    .success-icon { width: 80px; height: 80px; margin: 0 auto 25px; background: #27ae60; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; color: white; }
     .recap-box { background: #f8f9fa; border-radius: 6px; padding: 20px; text-align: left; margin: 30px 0; }
     .recap-item { margin-bottom: 8px; font-size: 14px; color: #555; }
     .recap-item strong { color: #2c3e50; }
@@ -73,9 +70,7 @@
 
 <div class="container">
     <div class="header">
-        <div class="logo-display">
-            <img src="{{ asset('LOGO.png') }}" alt="Logo" style="max-width: 200px; height: auto;">
-        </div><br>
+        <div class="logo-display"><img src="{{ asset('LOGO.png') }}" alt="Logo" style="max-width: 200px; height: auto;"></div><br>
         <h2>Correction de souscription #{{ $souscription->id }}</h2>
         <p>Promoteur immobilier agréé</p>
         @if($souscription->statut === 'en_attente_correction')
@@ -83,10 +78,7 @@
         @endif
     </div>
 
-    <div class="progress-bar">
-        <div class="progress-fill" id="progressFill" style="width: 20%"></div>
-    </div>
-
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width: 20%"></div></div>
     <div class="step-indicator" id="stepIndicator">1/5</div>
 
     <form id="editSubscriptionForm" action="{{ route('chef_commercial.souscriptions.update', $souscription->id) }}" method="POST" enctype="multipart/form-data">
@@ -95,342 +87,245 @@
 
         @if ($errors->any())
             <div class="alert alert-danger" style="margin: 20px 30px; padding: 15px; border-radius: 6px; background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24;">
-                <strong><i class="bi bi-exclamation-triangle"></i> Erreurs de validation :</strong>
-                <ul style="margin-top: 10px; margin-bottom: 0; padding-left: 20px;">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
+                <strong>Erreurs :</strong>
+                <ul>@foreach ($errors->all() as $error) <li>{{ $error }}</li> @endforeach</ul>
             </div>
         @endif
 
-        <!-- ÉTAPE 0: Sélection catégorie -->
         <div class="step active" id="step0">
             <h3>Choisissez la catégorie de client</h3>
-
             <div class="category-selection">
                 <div class="category-card" data-category="Client individuel" onclick="selectCategory(this, 'Client individuel')">
-                    <div class="category-icon"><i class="bi bi-person"></i></div>
-                    <div class="category-label">Client<br>individuel</div>
+                    <div class="category-icon"><i class="bi bi-person"></i></div><div class="category-label">Client individuel</div>
                 </div>
-
                 <div class="category-card" data-category="Association Syndicat Mutuelle" onclick="selectCategory(this, 'Association Syndicat Mutuelle')">
-                    <div class="category-icon"><i class="bi bi-people"></i></div>
-                    <div class="category-label">Association<br>Syndicat<br>Mutuelle</div>
+                    <div class="category-icon"><i class="bi bi-people"></i></div><div class="category-label">Association Syndicat Mutuelle</div>
                 </div>
-
                 <div class="category-card" data-category="Client diaspora" onclick="selectCategory(this, 'Client diaspora')">
-                    <div class="category-icon"><i class="bi bi-globe"></i></div>
-                    <div class="category-label">Client<br>diaspora</div>
+                    <div class="category-icon"><i class="bi bi-globe"></i></div><div class="category-label">Client diaspora</div>
                 </div>
             </div>
-
             @php
-                $categorieClient = old('clientCategory', '');
-                if (!$categorieClient && $souscription->categorie_client) {
-                    $categorieMap = [
-                        'individuel' => 'Client individuel',
-                        'association' => 'Association Syndicat Mutuelle',
-                        'diaspora' => 'Client diaspora'
-                    ];
-                    $categorieClient = $categorieMap[$souscription->categorie_client] ?? '';
-                }
+                $catMap = ['individuel'=>'Client individuel','association'=>'Association Syndicat Mutuelle','syndicat'=>'Association Syndicat Mutuelle','mutuelle'=>'Association Syndicat Mutuelle','diaspora'=>'Client diaspora'];
+                $catVal = old('clientCategory', $catMap[$souscription->categorie_client] ?? '');
+                $orgVal = old('organisation_type', match($souscription->categorie_client) {
+                    'association' => 'Association',
+                    'syndicat' => 'Syndicat',
+                    'mutuelle' => 'Mutuelle',
+                    default => ''
+                });
             @endphp
-            <input type="hidden" name="clientCategory" id="clientCategory" required value="{{ $categorieClient }}">
-
-            <div class="buttons">
-                <button type="button" class="btn-primary" onclick="nextStep()" id="continueCategory" disabled>Continuer</button>
+            <input type="hidden" name="clientCategory" id="clientCategory" required value="{{ $catVal }}">
+            <div id="organisationTypeWrapper" style="display:none; margin-top: 15px;">
+                <label>Organisation</label>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="radio" name="organisation_type" value="Association" id="org_association" {{ $orgVal == 'Association' ? 'checked' : '' }} onchange="toggleOrganisationFields()">
+                        <label for="org_association">Association</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="radio" name="organisation_type" value="Syndicat" id="org_syndicat" {{ $orgVal == 'Syndicat' ? 'checked' : '' }} onchange="toggleOrganisationFields()">
+                        <label for="org_syndicat">Syndicat</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="radio" name="organisation_type" value="Mutuelle" id="org_mutuelle" {{ $orgVal == 'Mutuelle' ? 'checked' : '' }} onchange="toggleOrganisationFields()">
+                        <label for="org_mutuelle">Mutuelle</label>
+                    </div>
+                </div>
             </div>
+            <div class="mutuelle-select" id="mutuelleSelectWrapper" style="display:none; margin-top: 15px;">
+                <label>Mutuelle</label>
+                <select name="mutuelle_id" id="mutuelleSelect" disabled>
+                    <option value="">-- Sélectionnez une mutuelle --</option>
+                    @isset($mutuelles)
+                        @php $mutuelleVal = old('mutuelle_id', $souscription->client->mutuelle_id ?? null); @endphp
+                        @foreach($mutuelles as $m)
+                            <option value="{{ $m->id }}" data-project="{{ $m->project_id ?? '' }}" {{ (string)$mutuelleVal === (string)$m->id ? 'selected' : '' }}>{{ $m->nom }}</option>
+                        @endforeach
+                    @endisset
+                </select>
+                <small class="text-muted">Si la mutuelle propose un prix spécial pour le bien choisi, il sera appliqué automatiquement.</small>
+            </div>
+            <div class="buttons"><button type="button" class="btn-primary" onclick="nextStep()" id="continueCategory">Continuer</button></div>
         </div>
 
-        <!-- ÉTAPE 1 -->
         <div class="step" id="step1">
-            <h3>Informations du client</h3>
-
+            <h3>Informations personnelles</h3>
             <div class="form-row">
                 <div class="form-group">
-                    <label><i class="bi bi-person"></i> Nom et Prénom</label>
-                    <input type="text" name="fullName" required placeholder="Nom complet" class="@error('fullName') is-invalid @enderror" value="{{ old('fullName', $souscription->nom_prenom ?? '') }}">
-                    @error('fullName')
-                        <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
-                    @enderror
+                    <label>Nom</label>
+                    <input type="text" name="nom" required value="{{ old('nom', $souscription->nom) }}">
                 </div>
                 <div class="form-group">
-                    <label><i class="bi bi-calendar"></i> Date de naissance</label>
-                    <input type="date" name="birthDate" required class="@error('birthDate') is-invalid @enderror" value="{{ old('birthDate', $souscription->date_naissance ? $souscription->date_naissance->format('Y-m-d') : '') }}">
-                    @error('birthDate')
-                        <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
-                    @enderror
+                    <label>Prénom</label>
+                    <input type="text" name="prenom" required value="{{ old('prenom', $souscription->prenom) }}">
                 </div>
             </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label><i class="bi bi-geo-alt"></i> Lieu de naissance</label>
-                    <input type="text" name="birthPlace" required placeholder="Ville" class="@error('birthPlace') is-invalid @enderror" value="{{ old('birthPlace', $souscription->lieu_naissance ?? '') }}">
-                    @error('birthPlace')
-                        <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
-                    @enderror
-                </div>
-                <div class="form-group">
-                    <label><i class="bi bi-globe"></i> Nationalité</label>
-                    <input type="text" name="nationality" required placeholder="Pays" class="@error('nationality') is-invalid @enderror" value="{{ old('nationality', $souscription->nationalite ?? '') }}">
-                    @error('nationality')
-                        <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
-                    @enderror
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label><i class="bi bi-person-plus"></i> Nombre d'enfants</label>
-                    <input type="number" name="children" min="0" required placeholder="0" class="@error('children') is-invalid @enderror" value="{{ old('children', $souscription->nombre_enfants ?? 0) }}">
-                    @error('children')
-                        <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
-                    @enderror
-                </div>
-                <div class="form-group">
-                    <label><i class="bi bi-person-heart"></i> Ayant droit</label>
-                    <input type="text" name="heirs" required placeholder="Nom de l'ayant droit" class="@error('heirs') is-invalid @enderror" value="{{ old('heirs', is_array($souscription->ayant_droit) ? implode(', ', $souscription->ayant_droit) : $souscription->ayant_droit ?? '') }}">
-                    @error('heirs')
-                        <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
-                    @enderror
-                </div>
-            </div>
-
             <div class="form-group">
-                <label><i class="bi bi-envelope"></i> Email</label>
-                <input type="email" name="email" required placeholder="exemple@email.com" class="@error('email') is-invalid @enderror" value="{{ old('email', $souscription->email ?? '') }}">
-                @error('email')
-                    <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
-                @enderror
+                <label>Date de naissance</label>
+                <input type="date" name="birthDate" required value="{{ old('birthDate', $souscription->date_naissance ? $souscription->date_naissance->format('Y-m-d') : '') }}">
             </div>
-
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Lieu de naissance</label>
+                    <input type="text" name="birthPlace" required value="{{ old('birthPlace', $souscription->lieu_naissance) }}">
+                </div>
+                <div class="form-group">
+                    <label>Nationalité</label>
+                    <input type="text" name="nationality" required value="{{ old('nationality', $souscription->nationalite) }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nombre d'enfants</label>
+                    <input type="number" name="children" min="0" required value="{{ old('children', $souscription->nombre_enfants) }}">
+                </div>
+                <div class="form-group">
+                    <label>Ayant droit</label>
+                    <input type="text" name="heirs" required value="{{ old('heirs', $souscription->ayant_droit) }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" required value="{{ old('email', $souscription->email) }}">
+                </div>
+                <div class="form-group">
+                    <label>Téléphone</label>
+                    <input type="text" name="phone" required value="{{ old('phone', $souscription->telephone) }}">
+                </div>
+            </div>
             <div class="form-group">
-                <label><i class="bi bi-cash"></i> Salaire mensuel</label>
-                <input type="text" name="salary" required placeholder="Montant en FCFA" class="@error('salary') is-invalid @enderror" value="{{ old('salary', $souscription->salaire_mensuel ?? '') }}">
-                @error('salary')
-                    <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
-                @enderror
+                <label>Salaire mensuel</label>
+                <input type="text" name="salary" required value="{{ old('salary', $souscription->salaire_mensuel) }}" oninput="formatInputMontant(this)">
             </div>
-
             <div class="form-group">
                 <label>Situation matrimoniale:</label>
-                @php
-                    $situationMatrimoniale = old('maritalStatus', '');
-                    if (!$situationMatrimoniale && $souscription->situation_matrimoniale) {
-                        $situationMap = [
-                            'celibataire' => 'Célibataire',
-                            'divorce' => 'Divorcé(e)',
-                            'marie' => 'Marié(e)',
-                            'veuf' => 'Veuf(ve)'
-                        ];
-                        $situationMatrimoniale = $situationMap[$souscription->situation_matrimoniale] ?? '';
-                    }
-                @endphp
-                <div class="checkbox-group @error('maritalStatus') is-invalid @enderror">
-                    <div class="checkbox-item"><input type="checkbox" name="maritalStatus" value="Célibataire" id="cel" {{ $situationMatrimoniale == 'Célibataire' ? 'checked' : '' }} onclick="uncheckOthers(this, 'maritalStatus')"><label for="cel">Célibataire</label></div>
-                    <div class="checkbox-item"><input type="checkbox" name="maritalStatus" value="Divorcé(e)" id="div" {{ $situationMatrimoniale == 'Divorcé(e)' ? 'checked' : '' }} onclick="uncheckOthers(this, 'maritalStatus')"><label for="div">Divorcé(e)</label></div>
-                    <div class="checkbox-item"><input type="checkbox" name="maritalStatus" value="Marié(e)" id="mar" {{ $situationMatrimoniale == 'Marié(e)' ? 'checked' : '' }} onclick="uncheckOthers(this, 'maritalStatus')"><label for="mar">Marié(e)</label></div>
-                    <div class="checkbox-item"><input type="checkbox" name="maritalStatus" value="Veuf(ve)" id="veuf" {{ $situationMatrimoniale == 'Veuf(ve)' ? 'checked' : '' }} onclick="uncheckOthers(this, 'maritalStatus')"><label for="veuf">Veuf(ve)</label></div>
+                @php $sitVal = old('maritalStatus', $souscription->situation_matrimoniale); @endphp
+                <div class="checkbox-group">
+                    @foreach(['celibataire'=>'Célibataire','marie'=>'Marié(e)','concubinage'=>'Concubinage','divorce'=>'Divorcé(e)','veuf'=>'Veuf(ve)'] as $k=>$v)
+                        <div class="checkbox-item">
+                            <input type="radio" name="maritalStatus" value="{{ $v }}" id="sit_{{ $k }}" {{ $sitVal == $k || $sitVal == $v ? 'checked' : '' }} onchange="toggleConjoint()">
+                            <label for="sit_{{ $k }}">{{ $v }}</label>
+                        </div>
+                    @endforeach
                 </div>
-                @error('maritalStatus')
-                    <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
-                @enderror
             </div>
-
-            <div class="buttons">
-                <button type="button" class="btn-secondary" onclick="prevStep()">Retour</button>
-                <button type="button" class="btn-primary" onclick="nextStep()">Continuer</button>
+            <div id="conjointFields" style="display: none; background:#f8f9fa; padding:15px; border-radius:8px; margin-top:15px; border-left:4px solid #2c5f8d;">
+                <div class="form-row">
+                    <div class="form-group"><label>Nom conjoint</label><input type="text" name="nomConjoint" value="{{ old('nomConjoint', $souscription->nom_conjoint) }}"></div>
+                    <div class="form-group"><label>Tél conjoint</label><input type="text" name="telephoneConjoint" value="{{ old('telephoneConjoint', $souscription->telephone_conjoint) }}"></div>
+                </div>
             </div>
+            <div class="buttons"><button type="button" class="btn-secondary" onclick="prevStep()">Retour</button><button type="button" class="btn-primary" onclick="nextStep()">Continuer</button></div>
         </div>
 
-        <!-- ÉTAPE 2 -->
         <div class="step" id="step2">
-            <h3>Pièce d'identité et programme</h3>
-
+            <h3>Identification et Programme</h3>
             <div class="form-group">
                 <label>Nature de la pièce:</label>
-                @php
-                    $naturePiece = old('idType', '');
-                    if (!$naturePiece && $souscription->nature_piece) {
-                        $pieceMap = [
-                            'cni' => 'CNI',
-                            'passeport' => 'Passeport',
-                            'carte_consulaire' => 'Carte consulaire'
-                        ];
-                        $naturePiece = $pieceMap[$souscription->nature_piece] ?? '';
-                    }
-                @endphp
-                <div class="checkbox-group @error('idType') is-invalid @enderror">
-                    <div class="checkbox-item"><input type="checkbox" name="idType" value="CNI" id="cni" {{ $naturePiece == 'CNI' ? 'checked' : '' }} onclick="uncheckOthers(this, 'idType')"><label for="cni">CNI</label></div>
-                    <div class="checkbox-item"><input type="checkbox" name="idType" value="Passeport" id="pass" {{ $naturePiece == 'Passeport' ? 'checked' : '' }} onclick="uncheckOthers(this, 'idType')"><label for="pass">Passeport</label></div>
-                    <div class="checkbox-item"><input type="checkbox" name="idType" value="Carte consulaire" id="cons" {{ $naturePiece == 'Carte consulaire' ? 'checked' : '' }} onclick="uncheckOthers(this, 'idType')"><label for="cons">Carte consulaire</label></div>
+                @php $pieceVal = old('idType', $souscription->nature_piece); @endphp
+                <div class="checkbox-group">
+                    @foreach(['cni'=>'CNI','passeport'=>'Passeport','carte_consulaire'=>'Carte consulaire'] as $k=>$v)
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="idType" value="{{ $v }}" id="pc_{{ $k }}" {{ $pieceVal == $k || $pieceVal == $v ? 'checked' : '' }} onclick="uncheckOthers(this, 'idType')">
+                            <label for="pc_{{ $k }}">{{ $v }}</label>
+                        </div>
+                    @endforeach
                 </div>
-                @error('idType')<div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>@enderror
             </div>
-
+            <div class="form-group"><label>Numéro Pièce</label><input type="text" name="idNumber" required value="{{ old('idNumber', $souscription->numero_piece) }}"></div>
             <div class="form-group">
-                <label><i class="bi bi-file-text"></i> Numéro CNI / Passeport</label>
-                <input type="text" name="idNumber" required placeholder="Numéro d'identification" class="@error('idNumber') is-invalid @enderror" value="{{ old('idNumber', $souscription->numero_piece ?? '') }}">
-                @error('idNumber')<div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>@enderror
+                <label>Fichier Pièce</label>
+                @if($souscription->fichier_piece)<div class="mb-2 small text-success">Fichier existant: <a href="{{ Storage::url($souscription->fichier_piece) }}" target="_blank">Voir</a></div>@endif
+                <input type="file" name="idFile" onchange="updateFileName(this)">
+                <div id="fileName" class="small text-muted mt-1"></div>
             </div>
-
-            <div class="form-group">
-                <label>Téléverser la CNI/Passeport</label>
-                @if($souscription->fichier_piece)
-                    <div style="margin-bottom: 10px; padding: 10px; background: #e8f4f8; border-radius: 6px; font-size: 13px;">
-                        <i class="bi bi-file-earmark-check" style="color: #27ae60;"></i> 
-                        <strong>Fichier actuel :</strong> 
-                        <a href="{{ Storage::url($souscription->fichier_piece) }}" target="_blank" style="color: #2c5f8d; text-decoration: underline;">
-                            Voir le document
-                        </a>
-                        <br><small style="color: #666;">Téléchargez un nouveau fichier pour le remplacer (optionnel)</small>
-                    </div>
-                @endif
-                <div class="file-upload-area @error('idFile') is-invalid @enderror" onclick="document.getElementById('fileInput').click()">
-                    <div class="file-upload-icon"><i class="bi bi-cloud-upload"></i></div>
-                    <div class="file-upload-text">Joindre un document en PDF, JPG, PNG<br>(Taille maximale 10 Mo)</div>
-                </div>
-                <input type="file" id="fileInput" name="idFile" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="updateFileName(this)" class="@error('idFile') is-invalid @enderror">
-                <div id="fileName" style="margin-top: 10px; font-size: 13px; color: #27ae60;"></div>
-                @error('idFile')<div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>@enderror
-            </div>
-
             <div class="form-group">
                 <label>Programme</label>
-                <select name="program" required class="@error('program') is-invalid @enderror">
-                    <option value="">-- Sélectionnez un programme --</option>
-                    @foreach($projets as $projet)
-                        <option value="{{ $projet->id }}"
-                            {{ (old('program') == $projet->id) || ($souscription->programme == $projet->id) ? 'selected' : '' }}>
-                            {{ $projet->nom }}
-                        </option>
-                    @endforeach
+                <select name="program" required onchange="chargerBiensImmobiliers()">
+                    <option value="">-- Sélectionner --</option>
+                    @foreach($projets as $p)<option value="{{ $p->id }}" {{ old('program', $souscription->programme) == $p->id ? 'selected' : '' }}>{{ $p->nom }}</option>@endforeach
                 </select>
-                @error('program')<div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>@enderror
             </div>
-
-            <div class="form-group">
-                <label>La durée du contrat</label>
-                <div class="form-row">
-                    <div>
-                        <label style="font-size: 12px; color: #888;"><i class="bi bi-calendar"></i> Date de début</label>
-                        <input type="date" name="startDate" required class="@error('startDate') is-invalid @enderror" value="{{ old('startDate', $souscription->date_debut ? $souscription->date_debut->format('Y-m-d') : '') }}">
-                        @error('startDate')<div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>@enderror
-                    </div>
-                    <div>
-                        <label style="font-size: 12px; color: #888;"><i class="bi bi-calendar"></i> Date de fin</label>
-                        <input type="date" name="endDate" required class="@error('endDate') is-invalid @enderror" value="{{ old('endDate', $souscription->date_fin ? $souscription->date_fin->format('Y-m-d') : '') }}">
-                        @error('endDate')<div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>@enderror
-                    </div>
-                </div>
+            <div class="form-row">
+                <div class="form-group"><label>Date début</label><input type="date" name="startDate" required value="{{ old('startDate', $souscription->date_debut ? $souscription->date_debut->format('Y-m-d') : '') }}"></div>
+                <div class="form-group"><label>Date fin</label><input type="date" name="endDate" required value="{{ old('endDate', $souscription->date_fin ? $souscription->date_fin->format('Y-m-d') : '') }}"></div>
             </div>
-
-            <div class="buttons">
-                <button type="button" class="btn-secondary" onclick="prevStep()">Retour</button>
-                <button type="button" class="btn-primary" onclick="nextStep()">Continuer</button>
-            </div>
+            <div class="buttons"><button type="button" class="btn-secondary" onclick="prevStep()">Retour</button><button type="button" class="btn-primary" onclick="nextStep()">Continuer</button></div>
         </div>
 
-        <!-- ÉTAPE 3 -->
         <div class="step" id="step3">
-            <h3>Type de logement et paiement</h3>
-
+            <h3>Logement et Financement</h3>
             <div class="form-group">
-                <label>Types de logement :</label>
-                <div class="housing-options @error('housingType') is-invalid @enderror" id="housingOptionsContainer"></div>
-                <input type="hidden" name="housingType" id="housingType" required class="@error('housingType') is-invalid @enderror" value="{{ old('housingType', $souscription->bien_immobilier_id ? $souscription->bien_immobilier_id . '|' . ($souscription->bienImmobilier->titre ?? '') : '') }}">
-                @error('housingType')<div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>@enderror
+                <label>Type de logement:</label>
+                <div id="housingOptionsContainer" class="housing-options"></div>
+                <input type="hidden" name="housingType" id="housingType" required value="{{ old('housingType', $souscription->bien_immobilier_id ? $souscription->bien_immobilier_id . '|' . ($souscription->bienImmobilier->titre ?? '') : '') }}">
             </div>
-
             <div class="form-group">
-                <label>Mode paiement</label>
-                <div class="payment-options @error('paymentMode') is-invalid @enderror">
-                    <div class="option-card" onclick="selectOption(this, 'paymentMode', 'ESPECES')"><div class="option-checkbox"></div><span>ESPECES</span></div>
-                    <div class="option-card" onclick="selectOption(this, 'paymentMode', 'VIREMENT')"><div class="option-checkbox"></div><span>VIREMENT</span></div>
-                    <div class="option-card" onclick="selectOption(this, 'paymentMode', 'MOBILE_MONEY')"><div class="option-checkbox"></div><span>MOBILE_MONEY</span></div>
-                    <div class="option-card" onclick="selectOption(this, 'paymentMode', 'TEMPERAMENT')"><div class="option-checkbox"></div><span>TEMPERAMENT</span></div>
-                    <div class="option-card" onclick="selectOption(this, 'paymentMode', 'CREDIT_BANCAIRE')"><div class="option-checkbox"></div><span>CREDIT_BANCAIRE</span></div>
+                <label>Mode paiement:</label>
+                <div class="payment-options">
+                    @foreach(['ESPECES','VIREMENT','PRELEVEMENT_SOURCE','TEMPERAMENT','CREDIT_BANCAIRE'] as $m)
+                        <div class="option-card" onclick="selectOption(this, 'paymentMode', '{{ $m }}')"><div class="option-checkbox"></div><span>{{ str_replace('_', ' ', $m) }}</span></div>
+                    @endforeach
                 </div>
-                <input type="hidden" name="paymentMode" id="paymentMode" required class="@error('paymentMode') is-invalid @enderror" value="{{ old('paymentMode', $souscription->mode_paiement ?? '') }}">
-                @error('paymentMode')<div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>@enderror
+                <input type="hidden" name="paymentMode" id="paymentMode" required value="{{ old('paymentMode', $souscription->mode_paiement) }}">
             </div>
-
             <div class="summary-box">
-                <h4>💰 Valeur de la souscription : <span id="valeurSouscription">-</span> FCFA</h4>
-                <div class="summary-line"><span>Apport initial (<span id="pourcentageApport">-</span>%)</span><strong><span id="apportInitial">-</span> FCFA</strong></div>
+                <h4>💰 Valeur: <span id="valeurSouscription">-</span> FCFA</h4>
+                <div class="summary-line"><span>Apport (<span id="pourcentageApport">-</span>%)</span><strong><span id="apportInitial">-</span> FCFA</strong></div>
             </div>
-
-            <div class="warning-box">⚠️ Les frais de souscription s'élèvent à <span id="fraisSouscription">-</span> FCFA (non remboursables)</div>
-
-            <input type="hidden" name="valeur_souscription" id="valeur_souscription_input" value="{{ old('valeur_souscription', $souscription->prix_logement ?? '30000000') }}">
-            <input type="hidden" name="apport_initial" id="apport_initial_input" value="{{ old('apport_initial', $souscription->apport_initial ?? '3000000') }}">
-            <input type="hidden" name="frais_souscription" id="frais_souscription_input" value="{{ old('frais_souscription', $souscription->frais_souscription ?? '500000') }}">
-
-            <div class="buttons">
-                <button type="button" class="btn-secondary" onclick="prevStep()">Retour</button>
-                <button type="button" class="btn-primary" onclick="nextStep()">Continuer</button>
+            <div class="warning-box">Frais: <span id="fraisSouscription">-</span> FCFA</div>
+            <div class="form-group">
+                <div class="checkbox-item">
+                    @php $apportPayeVal = old('apport_initial_paye_par_client', $souscription->apport_initial_paye_par_client ?? true) ? '1' : '0'; @endphp
+                    <input type="hidden" name="apport_initial_paye_par_client" value="0">
+                    <input type="checkbox" id="apport_initial_paye_par_client" name="apport_initial_paye_par_client" value="1" {{ $apportPayeVal === '1' ? 'checked' : '' }}>
+                    <label for="apport_initial_paye_par_client">Apport initial payé par le client</label>
+                </div>
             </div>
+            <input type="hidden" name="valeur_souscription" id="valeur_souscription_input" value="{{ old('valeur_souscription', $souscription->prix_logement) }}">
+            <input type="hidden" name="apport_initial" id="apport_initial_input" value="{{ old('apport_initial', $souscription->apport_initial) }}">
+            <input type="hidden" name="frais_souscription" id="frais_souscription_input" value="{{ old('frais_souscription', $souscription->frais_souscription) }}">
+            <div class="buttons"><button type="button" class="btn-secondary" onclick="prevStep()">Retour</button><button type="button" class="btn-primary" onclick="nextStep()">Continuer</button></div>
         </div>
 
-        <!-- ÉTAPE 4: Récapitulatif -->
         <div class="step" id="step4">
-            <h3>Récapitulatif des corrections</h3>
-            <div class="recap-box" id="recapContent"></div>
-            <div class="form-group">
-                <div class="checkbox-item @error('certify') is-invalid @enderror">
-                    <input type="checkbox" id="certify" name="certify" required class="@error('certify') is-invalid @enderror" {{ old('certify') ? 'checked' : '' }}>
-                    <label for="certify">Je certifie que les informations corrigées sont exactes et j'autorise leur traitement</label>
-                </div>
-                @error('certify')<div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>@enderror
-            </div>
-            <div class="buttons">
-                <button type="button" class="btn-secondary" onclick="prevStep()">Retour</button>
-                <button type="submit" class="btn-primary">Enregistrer les corrections</button>
-            </div>
+            <h3>Récapitulatif</h3>
+            <div id="recapContent" class="recap-box"></div>
+            <div class="checkbox-item"><input type="checkbox" id="certify" name="certify" required><label for="certify">Je certifie l'exactitude des infos</label></div>
+            <div class="buttons"><button type="button" class="btn-secondary" onclick="prevStep()">Retour</button><button type="submit" class="btn-primary">Mettre à jour</button></div>
         </div>
     </form>
-
-    <div class="success-screen" id="successScreen">
-        <div class="success-icon"><i class="bi bi-check-circle"></i></div>
-        <h3>Modifications enregistrées</h3>
-        <button type="button" class="btn-primary" onclick="window.location.href='{{ route('chef_commercial.souscriptions.corrigees') }}'">Retour aux dossiers</button>
-    </div>
 </div>
 
-<script src="{{ asset('debug-edit.js') }}"></script>
-    <script>
-        let currentStep = 0;
-    const totalSteps = 5;
-    const biensImmobiliers = @json($biensImmobiliers ?? []);
+<script type="application/json" id="biensImmobiliersData">@php echo json_encode($biensImmobiliers); @endphp</script>
+<script>
+    let currentStep = 0;
+    const biensImmobiliers = JSON.parse(document.getElementById('biensImmobiliersData')?.textContent || '{}');
 
     function updateProgress() {
-        const progress = ((currentStep + 1) / totalSteps) * 100;
-        document.getElementById('progressFill').style.width = progress + '%';
-        document.getElementById('stepIndicator').textContent = (currentStep + 1) + '/' + totalSteps;
+        document.getElementById('progressFill').style.width = ((currentStep + 1) / 5) * 100 + '%';
+        document.getElementById('stepIndicator').textContent = (currentStep + 1) + '/5';
     }
     function showStep(n) {
         document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-        const step = document.getElementById('step' + n);
-        if (step) step.classList.add('active');
+        document.getElementById('step' + n).classList.add('active');
         updateProgress();
     }
-    function selectCategory(element, value) {
+    function selectCategory(el, v) {
         document.querySelectorAll('.category-card').forEach(c => c.classList.remove('selected'));
-        element.classList.add('selected');
-        document.getElementById('clientCategory').value = value;
-        document.getElementById('continueCategory').disabled = false;
+        el.classList.add('selected');
+        document.getElementById('clientCategory').value = v;
+        toggleOrganisationFields();
     }
-    function selectOption(element, fieldName, value) {
-        const parent = element.parentElement;
-        parent.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
-        element.classList.add('selected');
-        document.getElementById(fieldName).value = value;
+    function selectOption(el, f, v) {
+        el.parentElement.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        document.getElementById(f).value = v;
     }
-    function updateFileName(input) {
-        const fileName = input.files[0]?.name || '';
-        document.getElementById('fileName').textContent = fileName ? 'Fichier sélectionné: ' + fileName : '';
+    function uncheckOthers(c, n) {
+        document.getElementsByName(n).forEach(i => { if(i!==c) i.checked=false; });
     }
     function nextStep() {
         if (validateStep(currentStep)) {
@@ -439,161 +334,196 @@
         }
     }
     function prevStep() { currentStep--; showStep(currentStep); }
-    function validateStep(step) {
-        const currentStepElement = document.getElementById('step' + step);
-        const requiredFields = currentStepElement.querySelectorAll('[required]');
-        for (let field of requiredFields) {
-            if (!field.value || (typeof field.value === 'string' && !field.value.trim())) {
-                alert('Veuillez remplir tous les champs obligatoires');
-                field.focus();
+    function validateStep(s) {
+        const step = document.getElementById('step' + s);
+        const req = step.querySelectorAll('[required]');
+        const processedRadioNames = new Set();
+        for (let f of req) {
+            const type = (f.getAttribute('type') || '').toLowerCase();
+            if (type === 'radio') {
+                const name = f.getAttribute('name') || '';
+                if (!name || processedRadioNames.has(name)) continue;
+                processedRadioNames.add(name);
+                const checked = step.querySelector('input[type="radio"][name="' + name + '"]:checked');
+                if (!checked) {
+                    alert('Champ obligatoire');
+                    f.focus();
+                    return false;
+                }
+                continue;
+            }
+
+            if (type === 'checkbox') {
+                if (!f.checked) {
+                    alert('Champ obligatoire');
+                    f.focus();
+                    return false;
+                }
+                continue;
+            }
+
+            if (!String(f.value || '').trim()) {
+                alert('Champ obligatoire');
+                f.focus();
                 return false;
             }
         }
         return true;
     }
-    function generateRecap() {
-        const formData = new FormData(document.getElementById('editSubscriptionForm'));
-        let recapHTML = '';
-        recapHTML += '<div class="recap-item"><strong>Catégorie:</strong> ' + (formData.get('clientCategory') || '-') + '</div>';
-        recapHTML += '<div class="recap-item"><strong>Nom:</strong> ' + (formData.get('fullName') || '-') + '</div>';
-        recapHTML += '<div class="recap-item"><strong>Nationalité:</strong> ' + (formData.get('nationality') || '-') + '</div>';
-        recapHTML += '<div class="recap-item"><strong>Type de logement:</strong> ' + (formData.get('housingType') || '-') + '</div>';
-        recapHTML += '<div class="recap-item"><strong>Mode de paiement:</strong> ' + (formData.get('paymentMode') || '-') + '</div>';
-        recapHTML += '<div class="recap-item"><strong>Valeur de souscription:</strong> ' + formatMontant(parseInt(formData.get('valeur_souscription') || '0')) + ' FCFA</div>';
-        recapHTML += '<div class="recap-item"><strong>Apport initial:</strong> ' + formatMontant(parseInt(formData.get('apport_initial') || '0')) + ' FCFA</div>';
-        recapHTML += '<div class="recap-item"><strong>Frais de souscription:</strong> ' + formatMontant(parseInt(formData.get('frais_souscription') || '0')) + ' FCFA [non remboursables]</div>';
-        document.getElementById('recapContent').innerHTML = recapHTML;
-    }
-    document.getElementById('editSubscriptionForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        if (!document.getElementById('certify').checked) { alert('Veuillez certifier que les informations sont exactes'); return; }
-        this.submit();
-    });
-    function formatMontant(montant) { return new Intl.NumberFormat('fr-FR').format(isNaN(montant) ? 0 : montant); }
-    
-    function uncheckOthers(element, fieldName) {
-        // Décocher toutes les autres checkboxes du même groupe
-        document.querySelectorAll('input[name="' + fieldName + '"]').forEach(function(checkbox) {
-            if (checkbox !== element) {
-                checkbox.checked = false;
-            }
-        });
-    }
-    function calculerValeursSouscription() {
-        const programmeSelect = document.querySelector('select[name="program"]');
-        const housingTypeValue = document.getElementById('housingType').value;
-        if (!programmeSelect || !programmeSelect.value || !housingTypeValue) return;
-        const [bienId] = housingTypeValue.split('|');
-        const projetId = programmeSelect.value;
-        const biens = (biensImmobiliers && biensImmobiliers[projetId]) ? biensImmobiliers[projetId] : [];
-        const bien = biens.find(b => b.id == bienId);
-        if (bien && bien.prix) {
-            const valeurSouscription = bien.prix;
-            const pourcentageApport = parseFloat(bien.pourcentage_apport) || 10;
-            const fraisSouscription = parseFloat(bien.frais_souscription) || 500000;
-            const apportInitial = parseFloat(bien.apport_initial) || Math.round(valeurSouscription * (pourcentageApport / 100));
-            document.getElementById('valeurSouscription').textContent = formatMontant(valeurSouscription);
-            document.getElementById('pourcentageApport').textContent = pourcentageApport;
-            document.getElementById('apportInitial').textContent = formatMontant(apportInitial);
-            document.getElementById('fraisSouscription').textContent = formatMontant(fraisSouscription);
-            document.getElementById('valeur_souscription_input').value = valeurSouscription;
-            document.getElementById('apport_initial_input').value = apportInitial;
-            document.getElementById('frais_souscription_input').value = fraisSouscription;
-        }
+    function formatMontant(m) { return new Intl.NumberFormat('fr-FR').format(m).replace(/\u202f/g, ' '); }
+    function formatInputMontant(i) { let v = i.value.replace(/\D/g, ''); if(v) i.value = formatMontant(v); }
+    function toggleConjoint() {
+        const mar = document.querySelector('input[name="maritalStatus"]:checked')?.value;
+        document.getElementById('conjointFields').style.display = (mar === 'Marié(e)' || mar === 'marie') ? 'block' : 'none';
     }
     function chargerBiensImmobiliers() {
-        const programmeSelect = document.querySelector('select[name="program"]');
-        const housingContainer = document.getElementById('housingOptionsContainer');
-        const housingTypeInput = document.getElementById('housingType');
-        if (!programmeSelect || !programmeSelect.value || !housingContainer) return;
-        
-        const projetId = programmeSelect.value;
-        const biens = (biensImmobiliers && biensImmobiliers[projetId]) ? biensImmobiliers[projetId] : [];
-        
-        // Sauvegarder la valeur actuelle avant de vider
-        const currentHousingValue = housingTypeInput.value;
-        
-        housingContainer.innerHTML = '';
-        
-        if (biens.length === 0) { 
-            housingContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Aucun bien immobilier disponible pour ce programme</div>'; 
-            housingTypeInput.value = '';
-            return; 
+        const pid = document.querySelector('select[name="program"]').value;
+        const cont = document.getElementById('housingOptionsContainer');
+        const hType = document.getElementById('housingType');
+        cont.innerHTML = '';
+        if(!pid || !biensImmobiliers[pid]) return;
+        const mutSel = document.getElementById('mutuelleSelect');
+        if (mutSel) {
+            const opts = mutSel.querySelectorAll('option');
+            opts.forEach(o => {
+                const proj = o.getAttribute('data-project');
+                if (!o.value) return;
+                if (proj && String(proj) !== String(pid)) {
+                    o.style.display = 'none';
+                    if (mutSel.value === o.value) mutSel.value = '';
+                } else {
+                    o.style.display = '';
+                }
+            });
         }
-        
-        biens.forEach(function(bien) {
-            const optionCard = document.createElement('div'); 
-            optionCard.className = 'option-card';
-            optionCard.setAttribute('data-bien-id', bien.id);
-            optionCard.onclick = function() { 
-                selectOption(this, 'housingType', bien.id + '|' + bien.titre); 
-                calculerValeursSouscription(); 
+        biensImmobiliers[pid].forEach(b => {
+            const card = document.createElement('div');
+            card.className = 'option-card';
+            if(hType.value.startsWith(b.id + '|')) card.classList.add('selected');
+            card.onclick = function() {
+                selectOption(this, 'housingType', b.id + '|' + b.titre);
+                calculer(b);
             };
-            optionCard.innerHTML = '<div class="option-checkbox"></div><span>' + bien.titre + '</span>'+
-                '<div style="font-size: 12px; color: #666; margin-top: 5px;">Prix: ' + formatMontant(bien.prix) + ' FCFA</div>';
-            housingContainer.appendChild(optionCard);
-            
-            // Restaurer la sélection si c'est le bien actuel
-            if (currentHousingValue && currentHousingValue.startsWith(bien.id + '|')) {
-                optionCard.classList.add('selected');
-                housingTypeInput.value = currentHousingValue;
-            }
+            card.innerHTML = `<div class="option-checkbox"></div><div><strong>${b.titre}</strong><br><small>${formatMontant(b.prix)} FCFA</small></div>`;
+            cont.appendChild(card);
+            if(card.classList.contains('selected')) calculer(b);
         });
     }
-    document.addEventListener('DOMContentLoaded', function() {
-        const programmeSelect = document.querySelector('select[name="program"]');
-        if (programmeSelect) {
-            programmeSelect.addEventListener('change', function() { 
-                chargerBiensImmobiliers(); 
-                calculerValeursSouscription(); 
-            });
-            
-            // Charger les biens immobiliers si un programme est déjà sélectionné
-            if (programmeSelect.value) { 
-                chargerBiensImmobiliers(); 
-                
-                // Après le chargement, restaurer la sélection du bien immobilier
-                setTimeout(function() {
-                    const housingTypeValue = document.getElementById('housingType').value;
-                    if (housingTypeValue) {
-                        const housingOptions = document.querySelectorAll('#housingOptionsContainer .option-card');
-                        housingOptions.forEach(card => {
-                            if (housingTypeValue.includes('|')) {
-                                const [bienId, bienTitre] = housingTypeValue.split('|');
-                                // Vérifier si la carte correspond au bien ID
-                                const cardOnclick = card.getAttribute('onclick');
-                                if (cardOnclick && cardOnclick.includes(bienId)) {
-                                    card.classList.add('selected');
-                                    calculerValeursSouscription();
-                                }
-                            }
-                        });
-                    }
-                }, 300);
+    function calculer(b) {
+        let valeurSouscription = parseFloat(b.prix) || 0;
+        const mutuelleSel = document.getElementById('mutuelleSelect');
+        const orgType = (document.querySelector('input[name="organisation_type"]:checked')?.value || '').toLowerCase();
+        if (orgType === 'mutuelle' && mutuelleSel && mutuelleSel.value && Array.isArray(b.mutuelles)) {
+            const m = b.mutuelles.find(x => String(x.id) === String(mutuelleSel.value));
+            if (m && m.pivot && m.pivot.prix_special) {
+                valeurSouscription = parseFloat(m.pivot.prix_special);
             }
         }
-        // Restaurer catégorie / paiement si old()
-        const clientCategory = document.getElementById('clientCategory').value;
-        if (clientCategory) { 
-            document.querySelectorAll('.category-card').forEach(card => { 
-                const cardCategory = card.getAttribute('data-category');
-                if (cardCategory === clientCategory) { 
-                    card.classList.add('selected'); 
-                    document.getElementById('continueCategory').disabled = false; 
-                } 
-            }); 
+        const pct = parseFloat(b.pourcentage_apport) || 10;
+        const appCalc = parseFloat(b.apport_initial) || Math.round(valeurSouscription * (pct/100));
+        const fr = parseFloat(b.frais_souscription) || 500000;
+        const apportPaye = document.getElementById('apport_initial_paye_par_client')?.checked ?? true;
+        const app = apportPaye ? appCalc : 0;
+        document.getElementById('valeurSouscription').textContent = formatMontant(valeurSouscription);
+        document.getElementById('pourcentageApport').textContent = apportPaye ? pct : 0;
+        document.getElementById('apportInitial').textContent = formatMontant(app);
+        document.getElementById('fraisSouscription').textContent = formatMontant(fr);
+        document.getElementById('valeur_souscription_input').value = valeurSouscription;
+        document.getElementById('apport_initial_input').value = app;
+        document.getElementById('frais_souscription_input').value = fr;
+    }
+    function generateRecap() {
+        const data = new FormData(document.getElementById('editSubscriptionForm'));
+        const cat = data.get('clientCategory') || '-';
+        let mutuelleLine = '';
+        let orgLine = '';
+        if (String(cat).toLowerCase() === 'association syndicat mutuelle') {
+            orgLine = `<div class="recap-item"><strong>Organisation:</strong> ${data.get('organisation_type') || '-'}</div>`;
         }
-        
-        // Restaurer le mode de paiement
-        const paymentMode = document.getElementById('paymentMode').value;
-        if (paymentMode) { 
-            document.querySelectorAll('.payment-options .option-card').forEach(card => { 
-                if (card.textContent.trim() === paymentMode) { 
-                    card.classList.add('selected'); 
-                } 
-            }); 
+        if ((data.get('organisation_type') || '').toLowerCase() === 'mutuelle') {
+            const mutSel = document.getElementById('mutuelleSelect');
+            const mutText = (mutSel && mutSel.selectedIndex > 0) ? mutSel.options[mutSel.selectedIndex].text : '-';
+            mutuelleLine = `<div class="recap-item"><strong>Mutuelle:</strong> ${mutText}</div>`;
         }
+        const logement = (data.get('housingType') || '').includes('|') ? (data.get('housingType') || '').split('|')[1] : (data.get('housingType') || '-');
+        document.getElementById('recapContent').innerHTML = `
+            <div class="recap-item"><strong>Catégorie:</strong> ${cat}</div>
+            ${orgLine}
+            ${mutuelleLine}
+            <div class="recap-item"><strong>Nom:</strong> ${data.get('nom')} ${data.get('prenom')}</div>
+            <div class="recap-item"><strong>Tél:</strong> ${data.get('phone')}</div>
+            <div class="recap-item"><strong>Logement:</strong> ${logement}</div>
+            <div class="recap-item"><strong>Prix:</strong> ${formatMontant(data.get('valeur_souscription'))} FCFA</div>
+            <div class="recap-item"><strong>Apport initial payé:</strong> ${String(data.get('apport_initial_paye_par_client') || '0') === '1' ? 'Oui' : 'Non'}</div>
+            <div class="recap-item"><strong>Apport initial:</strong> ${formatMontant(data.get('apport_initial') || 0)} FCFA</div>
+            <div class="recap-item"><strong>Frais souscription:</strong> ${formatMontant(data.get('frais_souscription') || 0)} FCFA</div>
+        `;
+    }
+    function updateFileName(i) { document.getElementById('fileName').textContent = i.files[0]?.name || ''; }
+    document.addEventListener('DOMContentLoaded', () => {
+        const cat = document.getElementById('clientCategory').value;
+        if(cat) document.querySelectorAll('.category-card').forEach(c => { if(c.innerText.includes(cat)) c.classList.add('selected'); });
+        toggleOrganisationFields();
+        const pm = document.getElementById('paymentMode').value;
+        if(pm) document.querySelectorAll('.payment-options .option-card').forEach(c => { if(c.innerText.trim() === pm.replace('_',' ')) c.classList.add('selected'); });
+        chargerBiensImmobiliers();
+        toggleConjoint();
         showStep(0);
+
+        const apportCheckbox = document.getElementById('apport_initial_paye_par_client');
+        if (apportCheckbox) {
+            apportCheckbox.addEventListener('change', function () {
+                const housingValue = document.getElementById('housingType')?.value || '';
+                if (!housingValue.includes('|')) return;
+                const projetId = document.querySelector('select[name="program"]')?.value;
+                const [bienId] = housingValue.split('|');
+                const b = (biensImmobiliers[projetId] || []).find(x => String(x.id) === String(bienId));
+                if (b) calculer(b);
+            });
+        }
+        const mutSel = document.getElementById('mutuelleSelect');
+        if (mutSel) {
+            mutSel.addEventListener('change', function() {
+                const housingValue = document.getElementById('housingType')?.value || '';
+                if (!housingValue.includes('|')) return;
+                const pid = document.querySelector('select[name="program"]')?.value;
+                const [bienId] = housingValue.split('|');
+                const bien = (biensImmobiliers[pid] || []).find(b => String(b.id) === String(bienId));
+                if (bien) calculer(bien);
+            });
+        }
     });
+
+    function toggleOrganisationFields() {
+        const cat = (document.getElementById('clientCategory')?.value || '').toLowerCase();
+        const orgWrapper = document.getElementById('organisationTypeWrapper');
+        const orgRadios = document.querySelectorAll('input[name="organisation_type"]');
+        const wrapper = document.getElementById('mutuelleSelectWrapper');
+        if (!orgWrapper || !wrapper) return;
+        const sel = document.getElementById('mutuelleSelect');
+        const isOrg = cat === 'association syndicat mutuelle';
+        orgWrapper.style.display = isOrg ? 'block' : 'none';
+        orgRadios.forEach(r => {
+            r.disabled = !isOrg;
+            if (isOrg) r.setAttribute('required', 'required');
+            else r.removeAttribute('required');
+        });
+
+        if (!isOrg) {
+            orgRadios.forEach(r => { r.checked = false; });
+            wrapper.style.display = 'none';
+            if (sel) { sel.value = ''; sel.removeAttribute('required'); sel.disabled = true; }
+            return;
+        }
+
+        const orgType = (document.querySelector('input[name="organisation_type"]:checked')?.value || '').toLowerCase();
+        if (orgType === 'mutuelle') {
+            wrapper.style.display = 'block';
+            if (sel) { sel.disabled = false; sel.setAttribute('required', 'required'); }
+        } else {
+            wrapper.style.display = 'none';
+            if (sel) { sel.value = ''; sel.removeAttribute('required'); sel.disabled = true; }
+        }
+    }
 </script>
 @endsection

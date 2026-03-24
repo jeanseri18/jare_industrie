@@ -13,12 +13,36 @@ class EquipeController extends Controller
     /**
      * Affiche la liste des utilisateurs en attente d'activation.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Utilisateurs dont le compte n'est pas encore activé (email non vérifié)
-        $users = User::whereNull('email_verified_at')
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $statut = $request->get('statut', 'en_attente');
+
+        $query = User::query()
+            ->where('role', '!=', 'client');
+
+        if ($statut === 'en_attente') {
+            $query->whereNull('email_verified_at')
+                ->where('requires_dg_validation', true);
+        } elseif ($statut === 'actif') {
+            $query->where('requires_dg_validation', false);
+        }
+
+        // Filtre par nom
+        if ($request->filled('name')) {
+            $query->where('name', 'like', '%' . $request->name . '%');
+        }
+
+        // Filtre par rôle
+        if ($request->filled('role')) {
+            $query->where('role', $request->role);
+        }
+
+        // Filtre par date d'inscription
+        if ($request->filled('date_inscription')) {
+            $query->whereDate('created_at', $request->date_inscription);
+        }
+
+        $users = $query->orderBy('created_at', 'desc')->get();
 
         return view('dg.equipes.index', compact('users'));
     }
@@ -33,7 +57,7 @@ class EquipeController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
-            'role' => 'required|in:OPERATEUR,COMPTABLE,DG,ADMIN_TECHNIQUE',
+            'role' => 'required|in:operateur,comptable,dg,admin_technique,chef_commercial',
             'password' => 'nullable|string|min:8',
         ]);
 
@@ -44,6 +68,7 @@ class EquipeController extends Controller
             'email' => $validated['email'],
             'role' => $validated['role'],
             'password' => Hash::make($password),
+            'requires_dg_validation' => true,
         ]);
 
         return redirect()->route('dg.equipes.index')
@@ -56,6 +81,7 @@ class EquipeController extends Controller
     public function activer(User $user)
     {
         $user->email_verified_at = now();
+        $user->requires_dg_validation = false;
         $user->save();
 
         return back()->with('success', 'Compte activé avec succès.');
@@ -81,7 +107,7 @@ class EquipeController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
-            'role' => 'required|in:OPERATEUR,COMPTABLE,DG,ADMIN_TECHNIQUE',
+            'role' => 'required|in:operateur,comptable,dg,admin_technique,chef_commercial',
             'password' => 'nullable|string|min:8',
         ]);
 
@@ -95,5 +121,18 @@ class EquipeController extends Controller
 
         return redirect()->route('dg.equipes.index')
             ->with('success', 'Informations utilisateur mises à jour avec succès.');
+    }
+
+    /**
+     * Affiche les logs (actions) liés à un utilisateur.
+     */
+    public function logs(User $user)
+    {
+        $activities = \App\Models\ActivityLog::with('user')
+            ->where('user_id', $user->id)
+            ->latest()
+            ->paginate(20);
+
+        return view('dg.equipes.logs', compact('user', 'activities'));
     }
 }

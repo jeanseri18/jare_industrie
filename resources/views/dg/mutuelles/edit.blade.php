@@ -46,7 +46,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="site_web" class="form-label">Site Web</label>
-                        <input type="url" class="form-control @error('site_web') is-invalid @enderror" 
+                        <input type="text" class="form-control @error('site_web') is-invalid @enderror" 
                                id="site_web" name="site_web" value="{{ old('site_web', $mutuelle->site_web) }}">
                         @error('site_web')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -54,16 +54,7 @@
                     </div>
                 </div>
                 
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="taux_reduction" class="form-label">Taux de Réduction (%) *</label>
-                        <input type="number" step="0.01" class="form-control @error('taux_reduction') is-invalid @enderror" 
-                               id="taux_reduction" name="taux_reduction" value="{{ old('taux_reduction', $mutuelle->taux_reduction) }}" min="0" max="100" required>
-                        @error('taux_reduction')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                </div>
+                
             </div>
             
             <div class="row">
@@ -121,6 +112,12 @@
             </div>
             
             <div class="row">
+                <div class="col-12">
+                    <div id="biens-container"></div>
+                </div>
+            </div>
+
+            <div class="row">
                 <div class="col-md-12">
                     <div class="mb-3">
                         <label for="description" class="form-label">Description</label>
@@ -173,6 +170,65 @@
                 form.classList.add('was-validated');
             }, false);
         });
+
+        // Gestion de l'affichage des biens
+        const projectSelect = document.getElementById('project_id');
+        const container = document.getElementById('biens-container');
+        const existingBiens = @json($mutuelle->biens->mapWithKeys(function ($item) { return [$item->id => $item->pivot->prix_special]; }));
+        
+        if (projectSelect) {
+            projectSelect.addEventListener('change', function() {
+                const projectId = this.value;
+                container.innerHTML = '<div class="text-center my-3"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
+                
+                if (projectId) {
+                    // Use a dummy ID and replace it with the actual project ID
+                    const url = "{{ route('dg.mutuelles.getBiens', ['projet' => 'PROJET_ID']) }}".replace('PROJET_ID', projectId);
+                    
+                    fetch(url)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(biens => {
+                            if (biens.length > 0) {
+                                let html = '<h5 class="mt-4 mb-3">Prix Spéciaux par Type de Logement</h5>';
+                                html += '<div class="row">';
+                                biens.forEach(bien => {
+                                    const prixFormatted = new Intl.NumberFormat('fr-FR').format(bien.prix);
+                                    const existingPrice = existingBiens[bien.id] !== undefined ? parseInt(existingBiens[bien.id]) : '';
+                                    html += `
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">${bien.titre} (${bien.type}) <br><small class="text-muted">Prix Standard: ${prixFormatted} FCFA</small></label>
+                                            <div class="input-group">
+                                                <input type="number" name="biens[${bien.id}]" class="form-control" placeholder="Prix spécial" min="0" step="1" value="${existingPrice}">
+                                                <span class="input-group-text">FCFA</span>
+                                            </div>
+                                        </div>
+                                    `;
+                                });
+                                html += '</div>';
+                                container.innerHTML = html;
+                            } else {
+                                container.innerHTML = '<div class="alert alert-info mt-3">Aucun bien immobilier trouvé pour ce projet.</div>';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erreur:', error);
+                            container.innerHTML = '<div class="alert alert-danger mt-3">Erreur lors du chargement des biens.</div>';
+                        });
+                } else {
+                    container.innerHTML = '';
+                }
+            });
+            
+            // Trigger change if value is pre-selected
+            if (projectSelect.value) {
+                projectSelect.dispatchEvent(new Event('change'));
+            }
+        }
     }, false);
 })();
 </script>

@@ -6,18 +6,34 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::where('role', '!=', 'client')
-            ->latest()
-            ->paginate(10);
+        $query = User::query();
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('telephone', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('role')) {
+            $query->where('role', $request->role);
+        }
+
+        $users = $query->latest()->paginate(10)->withQueryString();
+
+        $roles = ['admin_technique', 'dg', 'comptable', 'chef_commercial', 'operateur', 'client'];
             
-        return view('admin.users.index', compact('users'));
+        return view('admin.users.index', compact('users', 'roles'));
     }
 
     public function create()
@@ -31,7 +47,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => ['required', Rule::in(['admin', 'dg', 'comptable', 'chef_commercial', 'operateur'])],
+            'role' => ['required', Rule::in(['dg', 'comptable', 'chef_commercial', 'operateur', 'admin_technique'])],
             'telephone' => 'nullable|string|max:20',
         ]);
 
@@ -41,11 +57,12 @@ class UserController extends Controller
             'password' => Hash::make($request->password),
             'role' => $request->role,
             'telephone' => $request->telephone,
+            'requires_dg_validation' => true,
         ]);
 
         // Enregistrer l'activité
         ActivityLog::create([
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'action' => 'create',
             'description' => "Création de l'utilisateur: {$user->name} ({$user->role})",
             'model_type' => User::class,
@@ -78,7 +95,7 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-            'role' => ['required', Rule::in(['admin', 'dg', 'comptable', 'chef_commercial', 'operateur'])],
+            'role' => ['required', Rule::in(['dg', 'comptable', 'chef_commercial', 'operateur', 'admin_technique'])],
             'telephone' => 'nullable|string|max:20',
         ]);
 
@@ -93,7 +110,7 @@ class UserController extends Controller
 
         // Enregistrer l'activité
         ActivityLog::create([
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'action' => 'update',
             'description' => "Modification des informations de l'utilisateur: {$user->name} ({$user->role})",
             'model_type' => User::class,
@@ -118,7 +135,7 @@ class UserController extends Controller
 
         // Enregistrer l'activité
         ActivityLog::create([
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'action' => 'update',
             'description' => "Modification du mot de passe de l'utilisateur: {$user->name}",
             'model_type' => User::class,
@@ -143,7 +160,7 @@ class UserController extends Controller
 
         // Enregistrer l'activité
         ActivityLog::create([
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'action' => 'delete',
             'description' => "Suppression de l'utilisateur: {$userName}",
             'model_type' => User::class,

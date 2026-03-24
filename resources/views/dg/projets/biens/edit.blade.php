@@ -37,7 +37,11 @@
                             <option value="duplex" {{ old('type', $bien->type) == 'duplex' ? 'selected' : '' }}>Duplex</option>
                             <option value="appartement" {{ old('type', $bien->type) == 'appartement' ? 'selected' : '' }}>Appartement</option>
                             <option value="villa" {{ old('type', $bien->type) == 'villa' ? 'selected' : '' }}>Villa</option>
+                            <option value="etage" {{ old('type', $bien->type) == 'etage' ? 'selected' : '' }}>Étage</option>
+                            <option value="villa basse" {{ old('type', $bien->type) == 'villa basse' ? 'selected' : '' }}>Villa basse</option>
+                            <option value="villa +R1" {{ old('type', $bien->type) == 'villa +R1' ? 'selected' : '' }}>Villa +R1</option>
                             <option value="terrain" {{ old('type', $bien->type) == 'terrain' ? 'selected' : '' }}>Terrain</option>
+                            <option value="autre" {{ old('type', $bien->type) == 'autre' ? 'selected' : '' }}>Autre</option>
                         </select>
                         @error('type')
                             <div class="invalid-feedback">{{ $message }}</div>

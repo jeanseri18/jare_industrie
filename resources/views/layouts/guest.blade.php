@@ -477,14 +477,14 @@
                  
                 </div>
 
-                <!-- Desktop Menu -->
+               
                 <ul class="nav-menu">
-                    <li>
+              <!-- Desktop Menu -       <li>
                         <a href="{{ url('/') }}" class="nav-link">
                             <span>Accueil</span>
                         </a>
-                    </li>
-                    <li>
+                    </li>-->
+                    <!--li>
                         <a href="#services" class="nav-link">
                             <span>Operateur</span>
                         </a>
@@ -503,14 +503,14 @@
                         <a href="#contact" class="nav-link">
                             <span>DG</span>
                         </a>
-                    </li>
+                    </li-->
                 </ul>
 
                 <!-- CTA Buttons -->
                 <div class="nav-cta">
           
-                    <a href="" class="btn-primary">
-                        <span style="position: relative; z-index: 1;">Contact</span>
+                    <a href="{{ url('/login') }}" class="btn-primary">
+                        <span style="position: relative; z-index: 1;">Connexion</span>
                     </a>
                 </div>
 

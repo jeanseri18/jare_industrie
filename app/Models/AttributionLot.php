@@ -19,6 +19,7 @@ class AttributionLot extends Model
         'lot',
         'ilot',
         'numero_villa',
+        'superficie',
         'observations_internes'
     ];
 

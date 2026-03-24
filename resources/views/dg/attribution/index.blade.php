@@ -45,9 +45,12 @@
                             </td>
                             <td>
                                 @if($estAttribue)
-                                    <a href="{{ route('dg.souscriptions.show', $s) }}" class="btn btn-outline-info btn-sm"><i class="fas fa-eye me-1"></i> Voir l'attribution</a>
+                                    <div class="btn-group">
+                                        <a href="{{ route('dg.souscriptions.show', $s) }}" class="btn btn-outline-info btn-sm"><i class="fas fa-eye me-1"></i> Voir</a>
+                                        <a href="{{ route('dg.souscriptions.attestation', $s) }}" class="btn btn-outline-secondary btn-sm" title="Ouvrir l'attestation de réservation" target="_blank" rel="noopener"><i class="fas fa-file-pdf"></i></a>
+                                    </div>
                                 @else
-                                    <a href="{{ route('dg.souscriptions.show', $s) }}" class="btn btn-info btn-sm"><i class="fas fa-key me-1"></i> Attribuer</a>
+                                    <a href="{{ route('dg.attribution.show', $s) }}" class="btn btn-info btn-sm"><i class="fas fa-key me-1"></i> Attribuer</a>
                                 @endif
                             </td>
                         </tr>
@@ -61,4 +64,15 @@
         </div>
     </div>
 </div>
+    @if(session('download_attestation_url'))
+        <div class="alert alert-success d-flex align-items-center justify-content-between" role="alert" style="margin: 15px 0;">
+            <div>
+                <i class="fas fa-file-pdf me-2"></i>
+                Attestation de réservation prête.
+            </div>
+            <a href="{{ session('download_attestation_url') }}" class="btn btn-success btn-sm" target="_blank" rel="noopener">
+                Ouvrir
+            </a>
+        </div>
+    @endif
 @endsection

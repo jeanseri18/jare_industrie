@@ -5,11 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Client extends Model
 {
     protected $fillable = [
         'ref_client',
+        'nom',
+        'prenom',
         'nom_prenom',
         'date_naissance',
         'lieu_naissance',
@@ -18,6 +21,8 @@ class Client extends Model
         'nombre_enfants',
         'ayant_droit',
         'situation_matrimoniale',
+        'nom_conjoint',
+        'telephone_conjoint',
         'telephone',
         'email',
         'salaire_mensuel',
@@ -41,5 +46,10 @@ class Client extends Model
     public function souscriptions(): HasMany
     {
         return $this->hasMany(Souscription::class);
+    }
+
+    public function lastSouscription(): HasOne
+    {
+        return $this->hasOne(Souscription::class)->latestOfMany();
     }
 }

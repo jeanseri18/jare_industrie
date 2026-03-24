@@ -596,9 +596,15 @@
 
         <ul class="nav-menu">
             <li class="nav-item">
-                <a href="{{ route('dg.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+                <a href="{{ route('dg.dashboard') }}" class="nav-link {{ request()->routeIs('dg.dashboard') ? 'active' : '' }}">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Tableau de bord</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('dg.admin_technique.dashboard') }}" class="nav-link {{ request()->routeIs('dg.admin_technique.*') ? 'active' : '' }}">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Administrateur technique</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -611,6 +617,10 @@
             <i class="fas fa-user-check me-2"></i>   <span>Suivi des équipes   </span>
         </a>    </li>
 
+
+
+
+        
             <li class="nav-item">
                 <a href="{{ route('dg.projets.index') }}" class="nav-link {{ request()->routeIs('dg.projets.*') ? 'active' : '' }}">
                     <i class="fas fa-building"></i>
@@ -622,6 +632,12 @@
                 <a href="{{ route('dg.mutuelles.index') }}" class="nav-link {{ request()->routeIs('dg.mutuelles.*') ? 'active' : '' }}">
                     <i class="fas fa-handshake"></i>
                     <span>Gestion des mutuelles</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('dg.souscriptions.index') }}" class="nav-link {{ request()->routeIs('dg.souscriptions.index') ? 'active' : '' }}">
+                    <i class="fas fa-file-contract"></i>
+                    <span>Souscriptions</span>
                 </a>
             </li>
 
@@ -664,8 +680,12 @@
                     {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                 </div>
                 <div class="dropdown-menu-custom" id="userDropdown">
-                
-
+                    <a href="{{ route('profile.show') }}" class="dropdown-item-custom">
+                        <i class="fas fa-user-circle me-2"></i> Mon Profil
+                    </a>
+                    <a href="{{ route('dg.dashboard') }}" class="dropdown-item-custom">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
                     <hr style="margin: 0; border-color: #e5e7eb;">
                     <form method="POST" action="{{ route('logout') }}" style="margin: 0;">
                         @csrf

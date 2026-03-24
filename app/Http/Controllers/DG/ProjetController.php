@@ -7,6 +7,7 @@ use App\Models\Projet;
 use App\Models\ActivityLog;
 use App\Models\Mutuelle;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ProjetController extends Controller
 {
@@ -29,6 +30,7 @@ class ProjetController extends Controller
     {
         $request->validate([
             'nom' => 'required|string|max:150',
+            'numero_agrement' => 'nullable|string|max:100',
             'localisation' => 'nullable|string|max:255',
             'superficie' => 'nullable|numeric|min:0',
             'nb_logements' => 'nullable|integer|min:0',
@@ -38,12 +40,12 @@ class ProjetController extends Controller
         ]);
 
         $projet = Projet::create(array_merge($request->all(), [
-            'cree_par' => auth()->id()
+            'cree_par' => Auth::id()
         ]));
 
         // Enregistrer l'activité
         ActivityLog::create([
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'action' => 'create',
             'description' => "Création du projet: {$projet->nom}",
             'model_type' => Projet::class,
@@ -66,6 +68,7 @@ class ProjetController extends Controller
     {
         $request->validate([
             'nom' => 'required|string|max:150',
+            'numero_agrement' => 'nullable|string|max:100',
             'localisation' => 'nullable|string|max:255',
             'superficie' => 'nullable|numeric|min:0',
             'nb_logements' => 'nullable|integer|min:0',
@@ -78,7 +81,7 @@ class ProjetController extends Controller
 
         // Enregistrer l'activité
         ActivityLog::create([
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'action' => 'update',
             'description' => "Modification du projet: {$projet->nom}",
             'model_type' => Projet::class,
@@ -98,7 +101,7 @@ class ProjetController extends Controller
 
         // Enregistrer l'activité
         ActivityLog::create([
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'action' => 'delete',
             'description' => "Suppression du projet: {$projetName}",
             'model_type' => Projet::class,

@@ -1,6 +1,11 @@
+﻿﻿﻿﻿﻿﻿﻿@if (empty($embedded))
 @extends('layouts.operateur')
-
 @section('content')
+@endif
+@php
+    $storeAction = $storeAction ?? route('operateur.souscriptions.store');
+    $dashboardUrl = $dashboardUrl ?? route('operateur.dashboard');
+@endphp
 <style>
     * {
         margin: 0;
@@ -116,6 +121,10 @@
         grid-template-columns: repeat(3, 1fr);
         gap: 15px;
         margin-bottom: 30px;
+    }
+    .mutuelle-select {
+        margin: 10px 0 20px;
+        display: none;
     }
 
     .category-card {
@@ -419,6 +428,7 @@
         padding: 20px;
         text-align: left;
         margin: 30px 0;
+        text-align: justify;
     }
 
     .recap-box h4 {
@@ -430,10 +440,34 @@
         margin-bottom: 8px;
         font-size: 14px;
         color: #555;
+        text-align: justify;
     }
 
     .recap-item strong {
         color: #2c3e50;
+    }
+
+    .recap-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 16px;
+    }
+
+    .edit-step {
+        background: none;
+        border: none;
+        color: #2c5f8d;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .edit-step:hover {
+        text-decoration: underline;
     }
 
     @media (max-width: 600px) {
@@ -461,13 +495,13 @@
         <p>Promoteur immobilier agréé</p>
     </div>
 
-    <div class="progress-bar" style="{{ session('success') ? 'display:none' : '' }}">
+    <div class="progress-bar" @if (session('success')) style="display:none" @endif>
         <div class="progress-fill" id="progressFill" style="width: 20%"></div>
     </div>
 
-    <div class="step-indicator" id="stepIndicator" style="{{ session('success') ? 'display:none' : '' }}">1/5</div>
+    <div class="step-indicator" id="stepIndicator" @if (session('success')) style="display:none" @endif>1/5</div>
 
-    <form id="subscriptionForm" action="{{ route('operateur.souscriptions.store') }}" method="POST" enctype="multipart/form-data" style="{{ session('success') ? 'display:none' : '' }}">
+    <form id="subscriptionForm" action="{{ $storeAction }}" method="POST" enctype="multipart/form-data" @if (session('success')) style="display:none" @endif>
         @csrf
 
         <!-- Messages d'erreur -->
@@ -505,6 +539,37 @@
 
             <input type="hidden" name="clientCategory" id="clientCategory" required value="{{ old('clientCategory') }}">
 
+            <div id="organisationTypeWrapper" style="display:none; margin-top: 15px;">
+                <label>Organisation</label>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="radio" name="organisation_type" value="Association" id="org_association" {{ old('organisation_type') == 'Association' ? 'checked' : '' }} onchange="toggleOrganisationFields()">
+                        <label for="org_association">Association</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="radio" name="organisation_type" value="Syndicat" id="org_syndicat" {{ old('organisation_type') == 'Syndicat' ? 'checked' : '' }} onchange="toggleOrganisationFields()">
+                        <label for="org_syndicat">Syndicat</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="radio" name="organisation_type" value="Mutuelle" id="org_mutuelle" {{ old('organisation_type') == 'Mutuelle' ? 'checked' : '' }} onchange="toggleOrganisationFields()">
+                        <label for="org_mutuelle">Mutuelle</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mutuelle-select" id="mutuelleSelectWrapper" style="display:none; margin-top: 15px;">
+                <label>Mutuelle</label>
+                <select name="mutuelle_id" id="mutuelleSelect" disabled>
+                    <option value="">-- Sélectionnez une mutuelle --</option>
+                    @isset($mutuelles)
+                        @foreach($mutuelles as $m)
+                            <option value="{{ $m->id }}" data-project="{{ $m->project_id ?? '' }}" {{ (string)old('mutuelle_id') === (string)$m->id ? 'selected' : '' }}>{{ $m->nom }}</option>
+                        @endforeach
+                    @endisset
+                </select>
+                <small class="text-muted">Si la mutuelle propose un prix spécial pour le bien choisi, il sera appliqué automatiquement.</small>
+            </div>
+
             <div class="buttons">
                 <button type="button" class="btn-primary" onclick="nextStep()" id="continueCategory" disabled>Continuer</button>
             </div>
@@ -512,15 +577,24 @@
 
         <!-- ÉTAPE 1 -->
         <div class="step" id="step1">
-            <h3>Remplissez le formulaire de souscription</h3>
+            <h3>Informations personnelles</h3>
 
             <div class="form-row">
-                <div class="form-group">
-                    <label><i class="bi bi-person"></i> Nom et Prénom</label>
-                    <input type="text" name="fullName" required placeholder="Nom complet" class="@error('fullName') is-invalid @enderror" value="{{ old('fullName') }}">
-                    @error('fullName')
-                        <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
-                    @enderror
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="bi bi-person"></i> Nom</label>
+                        <input type="text" name="nom" required placeholder="Nom" class="@error('nom') is-invalid @enderror" value="{{ old('nom') }}">
+                        @error('nom')
+                            <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="form-group">
+                        <label><i class="bi bi-person"></i> Prénom</label>
+                        <input type="text" name="prenom" required placeholder="Prénom" class="@error('prenom') is-invalid @enderror" value="{{ old('prenom') }}">
+                        @error('prenom')
+                            <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                        @enderror
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -543,7 +617,7 @@
 
                 <div class="form-group">
                     <label><i class="bi bi-globe"></i> Nationalité</label>
-                    <input type="text" name="nationality" required placeholder="Pays" class="@error('nationality') is-invalid @enderror" value="{{ old('nationality') }}">
+                    <input type="text" name="nationality" required placeholder="Nationalité" class="@error('nationality') is-invalid @enderror" value="{{ old('nationality') }}">
                     @error('nationality')
                         <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
                     @enderror
@@ -568,17 +642,26 @@
                 </div>
             </div>
 
-            <div class="form-group">
-                <label><i class="bi bi-envelope"></i> Email</label>
-                <input type="email" name="email" required placeholder="exemple@email.com" class="@error('email') is-invalid @enderror" value="{{ old('email') }}">
-                @error('email')
-                    <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
-                @enderror
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="bi bi-envelope"></i> Email</label>
+                    <input type="email" name="email" required placeholder="exemple@email.com" class="@error('email') is-invalid @enderror" value="{{ old('email') }}">
+                    @error('email')
+                        <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
+                </div>
+                <div class="form-group">
+                    <label><i class="bi bi-telephone"></i> Téléphone</label>
+                    <input type="text" name="phone" required placeholder="Numéro de téléphone" class="@error('phone') is-invalid @enderror" value="{{ old('phone') }}">
+                    @error('phone')
+                        <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
+                </div>
             </div>
 
             <div class="form-group">
                 <label><i class="bi bi-cash"></i> Salaire mensuel</label>
-                <input type="text" name="salary" required placeholder="Montant en FCFA" class="@error('salary') is-invalid @enderror" value="{{ old('salary') }}">
+                <input type="text" name="salary" required placeholder="Montant en FCFA" class="format-number @error('salary') is-invalid @enderror" value="{{ old('salary') }}" oninput="formatInput(this)">
                 @error('salary')
                     <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
                 @enderror
@@ -588,25 +671,43 @@
                 <label>Situation matrimoniale:</label>
                 <div class="checkbox-group @error('maritalStatus') is-invalid @enderror">
                     <div class="checkbox-item">
-                        <input type="checkbox" name="maritalStatus" value="Célibataire" id="cel" {{ old('maritalStatus') == 'Célibataire' ? 'checked' : '' }}>
+                        <input type="radio" name="maritalStatus" value="Célibataire" id="cel" {{ old('maritalStatus') == 'Célibataire' ? 'checked' : '' }} onchange="toggleConjoint(this)">
                         <label for="cel">Célibataire</label>
                     </div>
                     <div class="checkbox-item">
-                        <input type="checkbox" name="maritalStatus" value="Divorcé(e)" id="div" {{ old('maritalStatus') == 'Divorcé(e)' ? 'checked' : '' }}>
-                        <label for="div">Divorcé(e)</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" name="maritalStatus" value="Marié(e)" id="mar" {{ old('maritalStatus') == 'Marié(e)' ? 'checked' : '' }}>
+                        <input type="radio" name="maritalStatus" value="Marié(e)" id="mar" {{ old('maritalStatus') == 'Marié(e)' ? 'checked' : '' }} onchange="toggleConjoint(this)">
                         <label for="mar">Marié(e)</label>
                     </div>
                     <div class="checkbox-item">
-                        <input type="checkbox" name="maritalStatus" value="Veuf(ve)" id="veuf" {{ old('maritalStatus') == 'Veuf(ve)' ? 'checked' : '' }}>
+                        <input type="radio" name="maritalStatus" value="Concubinage" id="conc" {{ old('maritalStatus') == 'Concubinage' ? 'checked' : '' }} onchange="toggleConjoint(this)">
+                        <label for="conc">Concubinage</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="radio" name="maritalStatus" value="Divorcé(e)" id="div" {{ old('maritalStatus') == 'Divorcé(e)' ? 'checked' : '' }} onchange="toggleConjoint(this)">
+                        <label for="div">Divorcé(e)</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="radio" name="maritalStatus" value="Veuf(ve)" id="veuf" {{ old('maritalStatus') == 'Veuf(ve)' ? 'checked' : '' }} onchange="toggleConjoint(this)">
                         <label for="veuf">Veuf(ve)</label>
                     </div>
                 </div>
                 @error('maritalStatus')
                     <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
                 @enderror
+            </div>
+
+            <div id="conjointFields" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 3px solid #2c5f8d; margin-top: 15px;">
+                <h4 style="font-size: 14px; color: #2c5f8d; margin-bottom: 10px;">Informations du conjoint</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="bi bi-person"></i> Nom du conjoint</label>
+                        <input type="text" name="nomConjoint" id="nomConjoint" placeholder="Nom complet du conjoint" value="{{ old('nomConjoint') }}">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="bi bi-telephone"></i> Téléphone du conjoint</label>
+                        <input type="text" name="telephoneConjoint" id="telephoneConjoint" placeholder="Numéro de téléphone" value="{{ old('telephoneConjoint') }}">
+                    </div>
+                </div>
             </div>
 
             <div class="buttons">
@@ -617,7 +718,7 @@
 
         <!-- ÉTAPE 2 -->
         <div class="step" id="step2">
-            <h3>Remplissez le formulaire de souscription</h3>
+            <h3>Identification et Programme</h3>
 
             <div class="form-group">
                 <label>Nature de la pièce:</label>
@@ -659,6 +760,17 @@
                 </div>
                 <input type="file" id="fileInput" name="idFile" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="updateFileName(this)" class="@error('idFile') is-invalid @enderror">
                 <div id="fileName" style="margin-top: 10px; font-size: 13px; color: #27ae60;"></div>
+                <div id="filePreviewContainer" style="margin-top: 12px; display: none;">
+                    <div id="imagePreviewWrapper" style="display:none;">
+                        <img id="imagePreview" alt="Aperçu" style="max-width: 100%; max-height: 320px; border: 1px solid #eee; border-radius: 6px;">
+                    </div>
+                    <div id="pdfPreviewWrapper" style="display:none; margin-top: 8px;">
+                        <embed id="pdfPreview" type="application/pdf" style="width: 100%; height: 420px; border: 1px solid #eee; border-radius: 6px;">
+                    </div>
+                    <div style="margin-top: 8px;">
+                        <a id="downloadPreview" href="#" target="_blank" style="display:none; font-size: 12px;">Ouvrir le fichier dans un nouvel onglet</a>
+                    </div>
+                </div>
                 @error('idFile')
                     <div class="invalid-feedback" style="color: #dc3545; font-size: 12px; margin-top: 5px;">{{ $message }}</div>
                 @enderror
@@ -714,7 +826,7 @@
 
         <!-- ÉTAPE 3 -->
         <div class="step" id="step3">
-            <h3>Remplissez le formulaire de souscription</h3>
+            <h3>Logement et Financement</h3>
 
             <div class="form-group">
                 <label>Types de logement :</label>
@@ -738,9 +850,9 @@
                         <div class="option-checkbox"></div>
                         <span>VIREMENT</span>
                     </div>
-                    <div class="option-card" onclick="selectOption(this, 'paymentMode', 'MOBILE_MONEY')">
+                    <div class="option-card" onclick="selectOption(this, 'paymentMode', 'PRELEVEMENT_SOURCE')">
                         <div class="option-checkbox"></div>
-                        <span>MOBILE_MONEY</span>
+                        <span>PRÉLÈVEMENT À LA SOURCE</span>
                     </div>
                     <div class="option-card" onclick="selectOption(this, 'paymentMode', 'TEMPERAMENT')">
                         <div class="option-checkbox"></div>
@@ -767,6 +879,14 @@
 
             <div class="warning-box">
                 ⚠️ Les frais de souscription s'élèvent à <span id="fraisSouscription">-</span> FCFA (non remboursables)
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-item">
+                    <input type="hidden" name="apport_initial_paye_par_client" value="0">
+                    <input type="checkbox" id="apport_initial_paye_par_client" name="apport_initial_paye_par_client" value="1" checked>
+                    <label for="apport_initial_paye_par_client">Apport initial payé par le client</label>
+                </div>
             </div>
             
             <input type="hidden" name="valeur_souscription" id="valeur_souscription_input" value="{{ old('valeur_souscription', '30000000') }}">
@@ -809,15 +929,71 @@
     <div class="success-screen {{ session('success') ? 'active' : '' }}" id="successScreen">
         <div class="success-icon"><i class="bi bi-check-circle"></i></div>
         <h3>Votre souscription a été soumise à la comptabilité</h3>
-        <button type="button" class="btn-primary" onclick="window.location.href='{{ route('operateur.dashboard') }}'">Retour à la page d’accueil</button>
+
+        
+        @if(session('client_credentials'))
+            <div style="margin: 30px 0; padding: 25px; background: #e8f4f8; border: 2px solid #2c5f8d; border-radius: 12px; text-align: left;">
+                <h4 style="color: #2c5f8d; margin-bottom: 15px; font-size: 18px; text-align: center;">
+                    <i class="bi bi-key"></i> Compte client crÃ©Ã© avec succÃ¨s
+                </h4>
+                <p style="color: #555; margin-bottom: 20px; text-align: center; font-size: 14px;">
+                    Un compte a Ã©tÃ© automatiquement crÃ©Ã© pour : <strong>{{ session('client_credentials')['nom_client'] }}</strong>
+                </p>
+                <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: 600; color: #333; margin-bottom: 5px; font-size: 13px;">
+                            <i class="bi bi-person-badge"></i> RÃ©fÃ©rence Client:
+                        </label>
+                        <input type="text" value="{{ session('client_credentials')['ref_client'] }}" readonly 
+                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: #f8f9fa; font-family: monospace; font-size: 14px;"
+                               onclick="this.select()">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: 600; color: #333; margin-bottom: 5px; font-size: 13px;">
+                            <i class="bi bi-envelope"></i> Email / Identifiant:
+                        </label>
+                        <input type="text" value="{{ session('client_credentials')['email'] }}" readonly 
+                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: #f8f9fa; font-family: monospace; font-size: 14px;"
+                               onclick="this.select()">
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; font-weight: 600; color: #333; margin-bottom: 5px; font-size: 13px;">
+                            <i class="bi bi-lock"></i> Mot de passe temporaire:
+                        </label>
+                        <input type="text" value="{{ session('client_credentials')['password'] }}" readonly 
+                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: #fff3cd; font-family: monospace; font-size: 16px; font-weight: 600; color: #856404;"
+                               onclick="this.select()">
+                    </div>
+                    <p style="font-size: 12px; color: #666; margin-top: 15px; padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                        <i class="bi bi-exclamation-triangle"></i> <strong>Important :</strong> Veuillez noter ces informations et les communiquer au client. 
+                        Le client devra changer son mot de passe lors de sa premiÃ¨re connexion.
+                    </p>
+                </div>
+            </div>
+        @endif
+        @if(session('fiche_souscription_url'))
+            <div style="margin: 20px 0; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+                <a class="btn-primary" href="{{ session('fiche_souscription_url') }}" target="_blank" style="display:inline-block; text-align:center; text-decoration:none; flex:0 0 auto;">
+                    Imprimer la fiche de souscription
+                </a>
+                @if(session('fiche_souscription_send_url'))
+                    <form method="POST" action="{{ session('fiche_souscription_send_url') }}" style="margin:0; flex:0 0 auto;">
+                        @csrf
+                        <button type="submit" class="btn-secondary">Envoyer au client pour signature</button>
+                    </form>
+                @endif
+            </div>
+        @endif
+        <a class="btn-primary" href="{{ $dashboardUrl }}" style="display:inline-block; text-align:center; text-decoration:none;">Retour à la page d’accueil</a>
     </div>
 
 </div>
 
+<script type="application/json" id="biensImmobiliersData">@php echo json_encode($biensImmobiliers); @endphp</script>
 <script>
     let currentStep = 0;
     const totalSteps = 5;
-    const biensImmobiliers = @json($biensImmobiliers);
+    const biensImmobiliers = JSON.parse(document.getElementById('biensImmobiliersData')?.textContent || '{}');
 
     function updateProgress() {
         const progress = ((currentStep + 1) / totalSteps) * 100;
@@ -833,12 +1009,18 @@
         }
         updateProgress();
     }
+    
+    function goToStep(n) {
+        currentStep = n;
+        showStep(currentStep);
+    }
 
     function selectCategory(element, value) {
         document.querySelectorAll('.category-card').forEach(c => c.classList.remove('selected'));
         element.classList.add('selected');
         document.getElementById('clientCategory').value = value;
         document.getElementById('continueCategory').disabled = false;
+        toggleOrganisationFields();
     }
 
     function selectOption(element, fieldName, value) {
@@ -849,8 +1031,62 @@
     }
 
     function updateFileName(input) {
-        const fileName = input.files[0]?.name || '';
-        document.getElementById('fileName').textContent = fileName ? 'Fichier sélectionné: ' + fileName : '';
+        const file = input.files && input.files[0] ? input.files[0] : null;
+        const nameDiv = document.getElementById('fileName');
+        const previewContainer = document.getElementById('filePreviewContainer');
+        const imgWrapper = document.getElementById('imagePreviewWrapper');
+        const pdfWrapper = document.getElementById('pdfPreviewWrapper');
+        const imgEl = document.getElementById('imagePreview');
+        const pdfEl = document.getElementById('pdfPreview');
+        const downloadLink = document.getElementById('downloadPreview');
+
+        // Reset
+        nameDiv.textContent = '';
+        previewContainer.style.display = 'none';
+        imgWrapper.style.display = 'none';
+        pdfWrapper.style.display = 'none';
+        downloadLink.style.display = 'none';
+
+        // Revoke previous URL if any
+        if (window.__idFileObjectUrl) {
+            URL.revokeObjectURL(window.__idFileObjectUrl);
+            window.__idFileObjectUrl = null;
+        }
+
+        if (!file) return;
+
+        nameDiv.textContent = 'Fichier sélectionné: ' + (file.name || '');
+
+        // Basic size check (10 MB)
+        const MAX_SIZE = 10 * 1024 * 1024;
+        if (file.size > MAX_SIZE) {
+            alert('Le fichier dépasse 10 Mo. Merci de choisir un fichier plus léger.');
+            input.value = '';
+            return;
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        window.__idFileObjectUrl = objectUrl;
+
+        // Show preview depending on type
+        const type = (file.type || '').toLowerCase();
+        previewContainer.style.display = 'block';
+
+        if (type.startsWith('image/')) {
+            imgEl.src = objectUrl;
+            imgWrapper.style.display = 'block';
+            downloadLink.href = objectUrl;
+            downloadLink.style.display = 'inline';
+        } else if (type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+            pdfEl.src = objectUrl;
+            pdfWrapper.style.display = 'block';
+            downloadLink.href = objectUrl;
+            downloadLink.style.display = 'inline';
+        } else {
+            // Unknown preview type: offer open link only
+            downloadLink.href = objectUrl;
+            downloadLink.style.display = 'inline';
+        }
     }
 
     function nextStep() {
@@ -871,9 +1107,33 @@
     function validateStep(step) {
         const currentStepElement = document.getElementById('step' + step);
         const requiredFields = currentStepElement.querySelectorAll('[required]');
+        const processedRadioNames = new Set();
         
         for (let field of requiredFields) {
-            if (!field.value.trim()) {
+            const type = (field.getAttribute('type') || '').toLowerCase();
+            if (type === 'radio') {
+                const name = field.getAttribute('name') || '';
+                if (!name || processedRadioNames.has(name)) continue;
+                processedRadioNames.add(name);
+                const checked = currentStepElement.querySelector('input[type="radio"][name="' + name + '"]:checked');
+                if (!checked) {
+                    alert('Veuillez remplir tous les champs obligatoires');
+                    field.focus();
+                    return false;
+                }
+                continue;
+            }
+
+            if (type === 'checkbox') {
+                if (!field.checked) {
+                    alert('Veuillez remplir tous les champs obligatoires');
+                    field.focus();
+                    return false;
+                }
+                continue;
+            }
+
+            if (!String(field.value || '').trim()) {
                 alert('Veuillez remplir tous les champs obligatoires');
                 field.focus();
                 return false;
@@ -881,27 +1141,104 @@
         }
         return true;
     }
+    function toggleOrganisationFields() {
+        const cat = (document.getElementById('clientCategory')?.value || '').toLowerCase();
+        const orgWrapper = document.getElementById('organisationTypeWrapper');
+        const orgRadios = document.querySelectorAll('input[name="organisation_type"]');
+        const wrapper = document.getElementById('mutuelleSelectWrapper');
+        if (!orgWrapper || !wrapper) return;
+        const sel = document.getElementById('mutuelleSelect');
+        const isOrg = cat === 'association syndicat mutuelle';
+        orgWrapper.style.display = isOrg ? 'block' : 'none';
+        orgRadios.forEach(r => {
+            r.disabled = !isOrg;
+            if (isOrg) r.setAttribute('required', 'required');
+            else r.removeAttribute('required');
+        });
+
+        if (!isOrg) {
+            orgRadios.forEach(r => { r.checked = false; });
+            wrapper.style.display = 'none';
+            if (sel) { sel.value = ''; sel.removeAttribute('required'); sel.disabled = true; }
+            return;
+        }
+
+        const orgType = (document.querySelector('input[name="organisation_type"]:checked')?.value || '').toLowerCase();
+        if (orgType === 'mutuelle') {
+            wrapper.style.display = 'block';
+            if (sel) { sel.disabled = false; sel.setAttribute('required', 'required'); }
+        } else {
+            wrapper.style.display = 'none';
+            if (sel) { sel.value = ''; sel.removeAttribute('required'); sel.disabled = true; }
+        }
+    }
 
     function generateRecap() {
-        const formData = new FormData(document.getElementById('subscriptionForm'));
-        let recapHTML = '';
-        
-        recapHTML += '<div class="recap-item"><strong>Catégorie:</strong> ' + formData.get('clientCategory') + '</div>';
-        recapHTML += '<div class="recap-item"><strong>Nom:</strong> ' + formData.get('fullName') + '</div>';
-        recapHTML += '<div class="recap-item"><strong>Date de naissance:</strong> ' + formData.get('birthDate') + '</div>';
-        recapHTML += '<div class="recap-item"><strong>Nationalité:</strong> ' + formData.get('nationality') + '</div>';
-        recapHTML += '<div class="recap-item"><strong>Email:</strong> ' + formData.get('email') + '</div>';
-        recapHTML += '<div class="recap-item"><strong>Type de logement:</strong> ' + formData.get('housingType') + '</div>';
-        recapHTML += '<div class="recap-item"><strong>Mode de paiement:</strong> ' + formData.get('paymentMode') + '</div>';
-        recapHTML += '<div class="recap-item"><strong>Valeur de souscription:</strong> ' + formatMontant(parseInt(formData.get('valeur_souscription'))) + ' FCFA</div>';
-        recapHTML += '<div class="recap-item"><strong>Apport initial:</strong> ' + formatMontant(parseInt(formData.get('apport_initial'))) + ' FCFA</div>';
-        recapHTML += '<div class="recap-item"><strong>Frais de souscription:</strong> ' + formatMontant(parseInt(formData.get('frais_souscription'))) + ' FCFA [non remboursables]</div>';
-        
-        document.getElementById('recapContent').innerHTML = recapHTML;
+        const form = document.getElementById('subscriptionForm');
+        const fd = new FormData(form);
+        const programSelect = document.querySelector('select[name="program"]');
+        const programText = programSelect && programSelect.selectedIndex >= 0 ? programSelect.options[programSelect.selectedIndex].text : '-';
+        const idTypeChecked = Array.from(document.querySelectorAll('input[name="idType"]:checked')).map(el => el.value).join(', ');
+        const fileEl = document.getElementById('fileInput');
+        const fileName = fileEl && fileEl.files && fileEl.files[0] ? fileEl.files[0].name : 'Non fourni';
+        const housingTypeRaw = fd.get('housingType') || '';
+        const housingTypeLabel = housingTypeRaw.includes('|') ? housingTypeRaw.split('|')[1] : housingTypeRaw || '-';
+        const valeurSous = fd.get('valeur_souscription') ? formatMontant(parseInt(fd.get('valeur_souscription'))) : '-';
+        const apportInit = fd.get('apport_initial') ? formatMontant(parseInt(fd.get('apport_initial'))) : '-';
+        const fraisSous = fd.get('frais_souscription') ? formatMontant(parseInt(fd.get('frais_souscription'))) : '-';
+
+        let html = '';
+
+        html += '<div class="recap-title"><h4>Catégorie de client</h4><button type="button" class="edit-step" onclick="goToStep(0)"><i class="bi bi-pencil"></i> Modifier</button></div>';
+        html += '<div class="recap-item"><strong>Catégorie:</strong> ' + (fd.get('clientCategory') || '-') + '</div>';
+
+        html += '<div class="recap-title"><h4>Informations personnelles</h4><button type="button" class="edit-step" onclick="goToStep(1)"><i class="bi bi-pencil"></i> Modifier</button></div>';
+        html += '<div class="recap-item"><strong>Nom:</strong> ' + (fd.get('nom') || '-') + '</div>';
+        html += '<div class="recap-item"><strong>Prénom:</strong> ' + (fd.get('prenom') || '-') + '</div>';
+        html += '<div class="recap-item"><strong>Date de naissance:</strong> ' + (fd.get('birthDate') || '-') + '</div>';
+        html += '<div class="recap-item"><strong>Lieu de naissance:</strong> ' + (fd.get('birthPlace') || '-') + '</div>';
+        html += '<div class="recap-item"><strong>Nationalité:</strong> ' + (fd.get('nationality') || '-') + '</div>';
+        html += '<div class="recap-item"><strong>Nombre d\'enfants:</strong> ' + (fd.get('children') || '-') + '</div>';
+        html += '<div class="recap-item"><strong>Ayant droit:</strong> ' + (fd.get('heirs') || '-') + '</div>';
+        html += '<div class="recap-item"><strong>Email:</strong> ' + (fd.get('email') || '-') + '</div>';
+        html += '<div class="recap-item"><strong>Salaire mensuel:</strong> ' + (fd.get('salary') || '-') + '</div>';
+        html += '<div class="recap-item"><strong>Situation matrimoniale:</strong> ' + (fd.get('maritalStatus') || '-') + '</div>';
+        if ((fd.get('maritalStatus') || '') === 'Marié(e)') {
+            html += '<div class="recap-item"><strong>Nom du conjoint:</strong> ' + (fd.get('nomConjoint') || '-') + '</div>';
+            html += '<div class="recap-item"><strong>Téléphone du conjoint:</strong> ' + (fd.get('telephoneConjoint') || '-') + '</div>';
+        }
+
+        html += '<div class="recap-title"><h4>Identification et Programme</h4><button type="button" class="edit-step" onclick="goToStep(2)"><i class="bi bi-pencil"></i> Modifier</button></div>';
+        html += '<div class="recap-item"><strong>Nature de la pièce:</strong> ' + (idTypeChecked || '-') + '</div>';
+        html += '<div class="recap-item"><strong>Numéro CNI / Passeport:</strong> ' + (fd.get('idNumber') || '-') + '</div>';
+        html += '<div class="recap-item"><strong>Fichier transmis:</strong> ' + fileName + '</div>';
+        const mutSel = document.getElementById('mutuelleSelect');
+        const mutText = (mutSel && mutSel.selectedIndex > 0) ? mutSel.options[mutSel.selectedIndex].text : '-';
+        if ((fd.get('clientCategory') || '').toLowerCase() === 'association syndicat mutuelle') {
+            html += '<div class="recap-item"><strong>Organisation:</strong> ' + (fd.get('organisation_type') || '-') + '</div>';
+        }
+        if ((fd.get('organisation_type') || '').toLowerCase() === 'mutuelle') {
+            html += '<div class="recap-item"><strong>Mutuelle:</strong> ' + mutText + '</div>';
+        }
+        html += '<div class="recap-item"><strong>Programme:</strong> ' + programText + '</div>';
+        html += '<div class="recap-item"><strong>Date de début:</strong> ' + (fd.get('startDate') || '-') + '</div>';
+        html += '<div class="recap-item"><strong>Date de fin:</strong> ' + (fd.get('endDate') || '-') + '</div>';
+
+        html += '<div class="recap-title"><h4>Logement et Financement</h4><button type="button" class="edit-step" onclick="goToStep(3)"><i class="bi bi-pencil"></i> Modifier</button></div>';
+        html += '<div class="recap-item"><strong>Type de logement:</strong> ' + housingTypeLabel + '</div>';
+        html += '<div class="recap-item"><strong>Mode de paiement:</strong> ' + (fd.get('paymentMode') || '-') + '</div>';
+        html += '<div class="recap-item"><strong>Valeur de la souscription:</strong> ' + valeurSous + ' FCFA</div>';
+        html += '<div class="recap-item"><strong>Apport initial payé:</strong> ' + ((fd.get('apport_initial_paye_par_client') || '0') === '1' ? 'Oui' : 'Non') + '</div>';
+        html += '<div class="recap-item"><strong>Apport initial:</strong> ' + apportInit + ' FCFA</div>';
+        html += '<div class="recap-item"><strong>Frais de souscription:</strong> ' + fraisSous + ' FCFA [non remboursables]</div>';
+
+        document.getElementById('recapContent').innerHTML = html;
     }
 
     document.getElementById('subscriptionForm').addEventListener('submit', function(e) {
         e.preventDefault();
+
+        toggleOrganisationFields();
         
         if (!document.getElementById('certify').checked) {
             alert('Veuillez certifier que les informations sont exactes');
@@ -927,6 +1264,7 @@
                 }
             });
         }
+        toggleOrganisationFields();
         
         // Restaurer le mode de paiement sélectionné
         const paymentMode = document.getElementById('paymentMode').value;
@@ -978,14 +1316,75 @@
                 }
             }
         }
+
+        const apportCheckbox = document.getElementById('apport_initial_paye_par_client');
+        if (apportCheckbox) {
+            apportCheckbox.addEventListener('change', function () {
+                calculerValeursSouscription();
+            });
+        }
     });
     
-    // Fonction pour formater les montants en FCFA
     function formatMontant(montant) {
-        return new Intl.NumberFormat('fr-FR').format(montant);
+        if (!montant && montant !== 0) return '';
+        return new Intl.NumberFormat('fr-FR').format(montant).replace(/\u202f/g, ' '); 
     }
-    
-    // Fonction pour calculer les valeurs dynamiquement
+
+    // Format input as user types
+    function formatInput(input) {
+        let value = input.value.replace(/[^\d]/g, '');
+        if (value) {
+            input.value = formatMontant(parseInt(value));
+        } else {
+            input.value = '';
+        }
+    }
+
+    function toggleConjoint(element) {
+        const value = element.value;
+        const conjointFields = document.getElementById('conjointFields');
+        const nomConjoint = document.getElementById('nomConjoint');
+        const telephoneConjoint = document.getElementById('telephoneConjoint');
+        
+        if (value === 'Marié(e)') {
+            conjointFields.style.display = 'block';
+            nomConjoint.setAttribute('required', 'required');
+            telephoneConjoint.setAttribute('required', 'required');
+        } else {
+            conjointFields.style.display = 'none';
+            nomConjoint.removeAttribute('required');
+            telephoneConjoint.removeAttribute('required');
+        }
+    }
+
+    // Clean numbers before submit
+    document.getElementById('subscriptionForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        toggleOrganisationFields();
+        
+        if (!document.getElementById('certify').checked) {
+            alert('Veuillez certifier que les informations sont exactes');
+            return;
+        }
+
+        // Clean salary input
+        const salaryInput = document.querySelector('input[name="salary"]');
+        if (salaryInput) {
+            salaryInput.value = salaryInput.value.replace(/[^\d]/g, '');
+        }
+        
+        // Soumettre le formulaire
+        this.submit();
+    });
+
+    // Check initial state of conjoint fields
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkedRadio = document.querySelector('input[name="maritalStatus"]:checked');
+        if (checkedRadio) {
+            toggleConjoint(checkedRadio);
+        }
+    });
     function calculerValeursSouscription() {
         const programmeSelect = document.querySelector('select[name="program"]');
         const housingTypeValue = document.getElementById('housingType').value;
@@ -1003,14 +1402,25 @@
         const bien = biens.find(b => b.id == bienId);
         
         if (bien && bien.prix) {
-            const valeurSouscription = bien.prix;
+            let valeurSouscription = bien.prix;
+            // Si mutuelle sélectionnée et prix spécial disponible sur le pivot, l'appliquer
+            const mutuelleSel = document.getElementById('mutuelleSelect');
+            const orgType = (document.querySelector('input[name="organisation_type"]:checked')?.value || '').toLowerCase();
+            if (orgType === 'mutuelle' && mutuelleSel && mutuelleSel.value && Array.isArray(bien.mutuelles)) {
+                const m = bien.mutuelles.find(x => String(x.id) === String(mutuelleSel.value));
+                if (m && m.pivot && m.pivot.prix_special) {
+                    valeurSouscription = parseFloat(m.pivot.prix_special);
+                }
+            }
             const pourcentageApport = parseFloat(bien.pourcentage_apport) || 10;
             const fraisSouscription = parseFloat(bien.frais_souscription) || 500000;
-            const apportInitial = parseFloat(bien.apport_initial) || Math.round(valeurSouscription * (pourcentageApport / 100));
+            const apportInitialCalc = parseFloat(bien.apport_initial) || Math.round(valeurSouscription * (pourcentageApport / 100));
+            const apportPaye = document.getElementById('apport_initial_paye_par_client')?.checked ?? true;
+            const apportInitial = apportPaye ? apportInitialCalc : 0;
             
             // Mettre à jour l'affichage
             document.getElementById('valeurSouscription').textContent = formatMontant(valeurSouscription);
-            document.getElementById('pourcentageApport').textContent = pourcentageApport;
+            document.getElementById('pourcentageApport').textContent = apportPaye ? pourcentageApport : 0;
             document.getElementById('apportInitial').textContent = formatMontant(apportInitial);
             document.getElementById('fraisSouscription').textContent = formatMontant(fraisSouscription);
             
@@ -1033,6 +1443,21 @@
         
         const projetId = programmeSelect.value;
         const biens = biensImmobiliers[projetId] || [];
+        // Filtrer les mutuelles selon projet si besoin
+        const mutSel = document.getElementById('mutuelleSelect');
+        if (mutSel) {
+            const opts = mutSel.querySelectorAll('option');
+            opts.forEach(o => {
+                const pid = o.getAttribute('data-project');
+                if (!o.value) return;
+                if (pid && String(pid) !== String(projetId)) {
+                    o.style.display = 'none';
+                    if (mutSel.value === o.value) mutSel.value = '';
+                } else {
+                    o.style.display = '';
+                }
+            });
+        }
         
         // Vider le conteneur
         housingContainer.innerHTML = '';
@@ -1098,4 +1523,6 @@
     });
 </script>
 
+@if (empty($embedded))
 @endsection
+@endif

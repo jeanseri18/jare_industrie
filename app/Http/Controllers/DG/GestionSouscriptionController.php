@@ -13,11 +13,9 @@ class GestionSouscriptionController extends Controller
      */
     public function attributionIndex()
     {
-        // Récupérer les IDs des souscriptions dont l'apport initial est totalement réglé
-        $souscriptionIds = ApportInitial::where('montant_reste', '<=', 0)->pluck('id_souscription');
-
-        $souscriptions = Souscription::with(['client', 'projet'])
-            ->whereIn('id', $souscriptionIds)
+        // Récupérer toutes les souscriptions qui ne sont pas annulées
+        $souscriptions = Souscription::with(['client', 'projet', 'attributionLot'])
+            ->where('statut', '!=', 'annulee')
             ->get();
 
         return view('dg.attribution.index', compact('souscriptions'));
@@ -28,10 +26,30 @@ class GestionSouscriptionController extends Controller
      */
     public function confirmationIndex()
     {
-        $souscriptions = Souscription::with(['client', 'projet', 'paiements'])
+        $souscriptions = Souscription::with(['client', 'projet', 'paiements', 'attributionLot'])
             ->where('statut', 'SOLD')
-            ->get();
+            ->get()
+            ->filter(function ($s) {
+                return $s->attributionLot;
+            })
+            ->map(function ($s) {
+                $totalPayes = $s->paiements()->where('statut', 'payé')->sum('montant');
+                $fraisTotal = \App\Models\FraisDossier::where('id_souscription', $s->id)->sum('montant');
+                $s->montant_total = (float) ($s->prix_logement ?? 0) + (float) $fraisTotal;
+                $s->total_paye = (float) $totalPayes;
+                $s->dernier_paiement = $s->paiements()->orderByDesc('date_paiement')->first();
+                return $s;
+            });
 
         return view('dg.confirmation.index', compact('souscriptions'));
+    }
+
+    /**
+     * Fiche d'attribution pour une souscription donnée.
+     */
+    public function attributionShow(Souscription $souscription)
+    {
+        $souscription->load(['client', 'projet', 'attributionLot']);
+        return view('dg.attribution.show', compact('souscription'));
     }
 }
