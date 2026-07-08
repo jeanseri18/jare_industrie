@@ -24,7 +24,7 @@ class ClientController extends Controller
             });
         }
 
-        $clients = $query->latest()->paginate(10)->withQueryString();
+        $clients = $query->latest()->paginate(config('pagination.per_page'))->withQueryString();
 
         return view('admin.clients.index', compact('clients'));
     }

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToOrganization;
+use App\Models\Organization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,7 +11,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Souscription extends Model
 {
+    use BelongsToOrganization;
+
     protected $fillable = [
+        'organization_id',
         'ref_souscription',
         'operateur_id',
         'client_id',
@@ -45,13 +50,22 @@ class Souscription extends Model
         'frais_souscription',
         'statut',
         'statut_correction',
-        'statut_precedent'
+        'statut_precedent',
+        'profession',
+        'entreprise',
+        'lieu_residence',
+        'ville',
+        'pays',
+        'date_delivrance_piece',
+        'date_expiration_piece',
     ];
 
     protected $casts = [
         'date_naissance' => 'date',
         'date_debut' => 'date',
         'date_fin' => 'date',
+        'date_delivrance_piece' => 'date',
+        'date_expiration_piece' => 'date',
         'nombre_enfants' => 'integer',
         'duree_contrat_mois' => 'integer',
         'valeur_souscription' => 'integer',
@@ -62,6 +76,11 @@ class Souscription extends Model
     ];
 
 
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
 
     public function paiements(): HasMany
     {
@@ -101,5 +120,10 @@ class Souscription extends Model
     public function apportInitial(): HasOne
     {
         return $this->hasOne(ApportInitial::class, 'id_souscription');
+    }
+
+    public function validationFinale(): HasOne
+    {
+        return $this->hasOne(ValidationFinale::class, 'idsouscription');
     }
 }

@@ -32,9 +32,6 @@ class ClientController extends Controller
             ->latest()
             ->get();
 
-        // Récupérer les 5 dernières notifications (simulées pour l'instant comme dans notifications())
-        $notifications = $this->getRecentNotifications($souscriptions)->take(5);
-
         // Statistiques pour le dashboard
         $totalPaye = 0;
         foreach($souscriptions as $s) {
@@ -47,7 +44,7 @@ class ClientController extends Controller
             'nb_attributions' => $souscriptions->whereNotNull('attributionLot')->count(),
         ];
 
-        return view('client.dashboard', compact('user', 'souscriptions', 'stats', 'notifications'));
+        return view('client.dashboard', compact('user', 'souscriptions', 'stats'));
     }
 
     /**
@@ -116,7 +113,7 @@ class ClientController extends Controller
         $paiements = Paiement::whereIn('dossier_id', $souscriptions->pluck('id'))
             ->with('souscription')
             ->latest('date_paiement')
-            ->paginate(10);
+            ->paginate(config('pagination.per_page'))->withQueryString();
 
         return view('client.historique', compact('paiements'));
     }
@@ -131,7 +128,7 @@ class ClientController extends Controller
             ->where('email', $user->email)
             ->orWhere('nom_prenom', 'LIKE', "%{$user->nom}%")
             ->latest()
-            ->paginate(10);
+            ->paginate(config('pagination.per_page'))->withQueryString();
 
         return view('client.souscriptions', compact('souscriptions'));
     }

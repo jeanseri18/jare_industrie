@@ -1,4 +1,7 @@
 @import 'tailwindcss';
+@import './legacy-backoffice.css';
+
+@source inline("icon-green icon-red icon-black icon-gray icon-blue icon-orange icon-purple icon-teal stat-card stat-icon stats-grid");
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -6,6 +9,84 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+    --color-primary: var(--org-primary, #003d82);
+    --color-secondary: var(--org-secondary, #1e3a8a);
+    --color-accent: var(--org-accent, #4CAF50);
+    --radius-ui: 0.75rem;
+}
+
+@layer base {
+    :root {
+        --ui-radius: 0.75rem;
+    }
+    body {
+        @apply bg-slate-50 text-slate-800 antialiased;
+        font-family: var(--font-sans);
+    }
+}
+
+@layer components {
+    .btn-primary {
+        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white transition;
+        border-radius: var(--ui-radius, 0.75rem);
+        background-color: #ff7200;
+        border: none;
+        box-shadow: none;
+        line-height: 1.25;
+        text-decoration: none;
+    }
+    .btn-primary:hover {
+        background-color: #e66500;
+    }
+    .btn-secondary {
+        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white transition;
+        border-radius: var(--ui-radius, 0.75rem);
+        background-color: #111827;
+        border: none;
+        box-shadow: none;
+        line-height: 1.25;
+        text-decoration: none;
+    }
+    .btn-secondary:hover {
+        background-color: #000;
+    }
+    .btn-danger {
+        @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white shadow-sm transition;
+        border-radius: var(--ui-radius, 0.75rem);
+        background-color: #ff7200;
+    }
+    .btn-danger:hover {
+        background-color: #e66500;
+    }
+    .card {
+        @apply border border-slate-200 bg-white p-6 shadow-sm;
+        border-radius: var(--ui-radius, 0.75rem);
+    }
+    .form-label {
+        @apply mb-1 block text-sm font-medium text-slate-700;
+    }
+    .form-input {
+        @apply w-full border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#ff7200] focus:outline-none focus:ring-2 focus:ring-[#ff7200]/20;
+        border-radius: var(--ui-radius, 0.75rem);
+    }
+    .form-select {
+        @apply w-full border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#ff7200] focus:outline-none focus:ring-2 focus:ring-[#ff7200]/20;
+        border-radius: var(--ui-radius, 0.75rem);
+    }
+    .stat-card-tailwind {
+        @apply border border-slate-200 bg-white p-5 shadow-sm;
+        border-radius: var(--ui-radius, 0.75rem);
+    }
+    .app-alert {
+        border-radius: var(--ui-radius, 0.75rem);
+    }
+    .badge {
+        @apply inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold;
+    }
+    .badge-success { @apply bg-gray-500 text-white; }
+    .badge-warning { @apply bg-orange-100 text-orange-800; }
+    .badge-danger { @apply bg-orange-100 text-orange-800; }
+    .badge-info { @apply bg-gray-900 text-white; }
+    .badge-secondary { @apply bg-gray-100 text-gray-700; }
 }

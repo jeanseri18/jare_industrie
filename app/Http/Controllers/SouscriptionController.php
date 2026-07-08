@@ -8,9 +8,13 @@ use App\Models\AttributionLot;
 use App\Models\ValidationFinale;
 use App\Models\Paiement;
 use App\Models\Client;
+use App\Services\DocumentPdfService;
+use App\Services\ReferenceGenerator;
+use App\Support\CurrentOrganization;
 use App\Models\Projet;
 use App\Models\Mutuelle;
 use App\Models\BienImmobilier;
+use App\Models\ProjetLot;
 use App\Models\FraisDossier;
 use App\Models\ApportInitial;
 use App\Models\User;
@@ -20,9 +24,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
+use App\Http\Controllers\Concerns\SyncsIdentityExtensions;
 
 class SouscriptionController extends Controller
 {
+    use SyncsIdentityExtensions;
+
     /**
      * Display a listing of the resource.
      */
@@ -56,7 +63,7 @@ class SouscriptionController extends Controller
             }
         }
 
-        $souscriptions = $query->latest()->paginate(20);
+        $souscriptions = $query->latest()->paginate(config('pagination.per_page'))->withQueryString();
         return view('dg.souscriptions.index', compact('souscriptions'));
     }
 
@@ -114,16 +121,17 @@ class SouscriptionController extends Controller
      */
     public function store(Request $request)
     {
-        $cleanAmount = function($value) {
-            return str_replace(' ', '', $value);
-        };
+        try {
+            $cleanAmount = function($value) {
+                return str_replace(' ', '', (string) ($value ?? ''));
+            };
 
-        $request->merge([
-            'salary' => $cleanAmount($request->salary),
-            'valeur_souscription' => $cleanAmount($request->valeur_souscription),
-            'apport_initial' => $cleanAmount($request->apport_initial),
-            'frais_souscription' => $cleanAmount($request->frais_souscription),
-        ]);
+            $request->merge([
+                'salary' => $cleanAmount($request->salary),
+                'valeur_souscription' => $cleanAmount($request->valeur_souscription),
+                'apport_initial' => $cleanAmount($request->apport_initial),
+                'frais_souscription' => $cleanAmount($request->frais_souscription),
+            ]);
 
         $request->validate([
             'clientCategory' => 'required|string|in:Client individuel,Association,Syndicat,Mutuelle,Association Syndicat Mutuelle,Client diaspora',
@@ -158,6 +166,13 @@ class SouscriptionController extends Controller
             'apport_initial' => 'required|numeric|min:0',
             'apport_initial_paye_par_client' => 'nullable|boolean',
             'frais_souscription' => 'required|numeric|min:0',
+            'profession' => 'nullable|string|max:255',
+            'entreprise' => 'nullable|string|max:255',
+            'lieu_residence' => 'nullable|string|max:255',
+            'ville' => 'nullable|string|max:120',
+            'pays' => 'nullable|string|max:120',
+            'date_delivrance_piece' => 'nullable|date',
+            'date_expiration_piece' => 'nullable|date',
         ]);
 
         $situationMatrimonialeMap = [
@@ -188,9 +203,7 @@ class SouscriptionController extends Controller
         }
         $categorieClient = $categorieClientMap[$effectiveCategory] ?? 'individuel';
 
-        $lastClient = Client::orderBy('id', 'desc')->first();
-        $nextNumber = $lastClient ? $lastClient->id + 1 : 1;
-        $refClient = 'CLI-' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+        $refClient = ReferenceGenerator::nextClientRef();
 
         $client = null;
         if ($request->email) {
@@ -238,6 +251,7 @@ class SouscriptionController extends Controller
                 $user->email = $emailForUser;
                 $user->password = Hash::make($temporaryPassword);
                 $user->role = User::ROLE_CLIENT;
+                $user->organization_id = CurrentOrganization::id();
                 $user->telephone = $request->phone ?? null;
                 $user->save();
 
@@ -258,6 +272,7 @@ class SouscriptionController extends Controller
             $client->save();
         }
 
+        $this->applyIdentityExtensionsToClient($client, $request);
         $client->categorie_client = $categorieClient;
         $client->mutuelle_id = $categorieClient === 'mutuelle' ? $request->mutuelle_id : null;
         $client->save();
@@ -330,10 +345,9 @@ class SouscriptionController extends Controller
         $souscription->apport_initial = $apportPaye ? $apportInitialCalc : 0;
         $souscription->frais_souscription = $fraisSouscription;
         $souscription->statut = 'en_attente';
+        $this->applyIdentityExtensionsToSouscription($souscription, $request);
 
-        $lastSouscription = Souscription::orderBy('id', 'desc')->first();
-        $nextNumber = $lastSouscription ? $lastSouscription->id + 1 : 1;
-        $souscription->ref_souscription = 'SOUS-' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+        $souscription->ref_souscription = ReferenceGenerator::nextSouscriptionRef();
 
         $souscription->save();
 
@@ -341,10 +355,26 @@ class SouscriptionController extends Controller
 
         $ficheUrl = route('dg.souscriptions.fiche-souscription', $souscription);
         $sendUrl = route('dg.souscriptions.fiche-souscription.send', $souscription);
+        $contratUrl = \Illuminate\Support\Facades\URL::signedRoute('public.souscriptions.contrat-reservation', ['souscription' => $souscription->id]);
         return redirect()->route('dg.souscriptions.create')
             ->with('success', 'Souscription créée avec succès et soumise pour validation.')
             ->with('fiche_souscription_url', $ficheUrl)
-            ->with('fiche_souscription_send_url', $sendUrl);
+            ->with('fiche_souscription_send_url', $sendUrl)
+            ->with('contrat_reservation_url', $contratUrl);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Erreur création souscription', [
+                'message' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
+            if (config('app.debug')) {
+                return back()->withInput()->with('error', 'Erreur serveur détaillée : ' . $e->getMessage() . ' dans ' . basename($e->getFile()) . ' à la ligne ' . $e->getLine());
+            }
+
+            return back()->withInput()->with('error', 'Erreur serveur. Veuillez réessayer ou contacter le support.');
+        }
     }
 
     private function createPaymentFromSubscription(Souscription $souscription): void
@@ -379,7 +409,7 @@ class SouscriptionController extends Controller
      */
     public function show(Souscription $souscription)
     {
-        $souscription->load(['client', 'projet', 'attributionLot', 'paiements', 'fraisDossier', 'apportInitial']);
+        $souscription->load(['client', 'projet', 'attributionLot', 'paiements', 'fraisDossier', 'apportInitial', 'validationFinale']);
         return view('dg.souscriptions.show', compact('souscription'));
     }
 
@@ -417,41 +447,90 @@ class SouscriptionController extends Controller
 
     public function attribuer(Request $request, Souscription $souscription)
     {
-        $request->validate([
-            'numero_page_guide' => 'required|string|max:50',
-            'lot' => 'required|string|max:50',
-            'ilot' => 'required|string|max:50',
-            'numero_villa' => 'required|string|max:50',
-            'superficie' => 'required|numeric|min:0',
-            'observations_internes' => 'nullable|string|max:1000',
-        ]);
-
-        // Vérification de la double attribution (même projet, même îlot, même lot)
-        $existe = AttributionLot::where('idProjet', $souscription->programme)
-            ->where('ilot', $request->ilot)
-            ->where('lot', $request->lot)
-            ->exists();
-
-        if ($existe) {
-            return back()->withErrors(['lot' => "Ce lot (Îlot {$request->ilot}, Lot {$request->lot}) est déjà attribué dans ce projet."])->withInput();
+        if ($souscription->attributionLot) {
+            return back()->with('error', 'Cette souscription a déjà une attribution.');
         }
 
-        // Vérification logique : Numéro Villa doit être égal au Lot
-        if ($request->numero_villa != $request->lot) {
-             return back()->withErrors(['numero_villa' => "Le numéro de la villa doit être identique au numéro du lot."])->withInput();
-        }
+        $lotsDisponibles = ProjetLot::disponiblesPourSouscription($souscription)->get();
 
-        $attribution = AttributionLot::create([
-            'idProjet' => $souscription->programme,
-            'id_souscription' => $souscription->id,
-            'type_logement' => $souscription->type_logement,
-            'numero_page_guide' => $request->numero_page_guide,
-            'lot' => $request->lot,
-            'ilot' => $request->ilot,
-            'numero_villa' => $request->numero_villa,
-            'superficie' => $request->superficie,
-            'observations_internes' => $request->observations_internes,
-        ]);
+        if ($lotsDisponibles->isNotEmpty()) {
+            $request->validate([
+                'projet_lot_id' => 'required|exists:projet_lots,id',
+                'numero_page_guide' => 'required|string|max:50',
+                'superficie' => 'required|numeric|min:0',
+                'surface_batie' => 'required|numeric|min:0',
+                'observations_internes' => 'nullable|string|max:1000',
+            ]);
+
+            $projetLot = ProjetLot::findOrFail($request->projet_lot_id);
+
+            if ((int) $projetLot->id_projet !== (int) $souscription->programme) {
+                abort(403);
+            }
+
+            if (! ProjetLot::disponiblesPourSouscription($souscription)->whereKey($projetLot->id)->exists()) {
+                return back()->withErrors([
+                    'projet_lot_id' => 'Ce lot n’est pas disponible pour cette souscription (autre type de bien ou déjà attribué).',
+                ])->withInput();
+            }
+
+            // Doublon sur la ligne d’inventaire (concurrence / rejeu)
+            if (AttributionLot::where('projet_lot_id', $projetLot->id)->exists()) {
+                return back()->withErrors([
+                    'projet_lot_id' => 'Ce lot d’inventaire est déjà attribué.',
+                ])->withInput();
+            }
+
+            $attribution = AttributionLot::create([
+                'idProjet' => $souscription->programme,
+                'id_souscription' => $souscription->id,
+                'projet_lot_id' => $projetLot->id,
+                'type_logement' => $souscription->type_logement,
+                'numero_page_guide' => $request->numero_page_guide,
+                'lot' => $projetLot->lot,
+                'ilot' => $projetLot->ilot,
+                'numero_villa' => $projetLot->lot,
+                'superficie' => $request->superficie,
+                'surface_batie' => $request->surface_batie,
+                'observations_internes' => $request->observations_internes,
+            ]);
+        } else {
+            $request->validate([
+                'numero_page_guide' => 'required|string|max:50',
+                'lot' => 'required|string|max:50',
+                'ilot' => 'required|string|max:50',
+                'numero_villa' => 'required|string|max:50',
+                'superficie' => 'required|numeric|min:0',
+                'surface_batie' => 'required|numeric|min:0',
+                'observations_internes' => 'nullable|string|max:1000',
+            ]);
+
+            $existe = AttributionLot::where('idProjet', $souscription->programme)
+                ->where('ilot', $request->ilot)
+                ->where('lot', $request->lot)
+                ->exists();
+
+            if ($existe) {
+                return back()->withErrors(['lot' => "Ce lot (Îlot {$request->ilot}, Lot {$request->lot}) est déjà attribué dans ce projet."])->withInput();
+            }
+
+            if ($request->numero_villa != $request->lot) {
+                return back()->withErrors(['numero_villa' => "Le numéro de la villa doit être identique au numéro du lot."])->withInput();
+            }
+
+            $attribution = AttributionLot::create([
+                'idProjet' => $souscription->programme,
+                'id_souscription' => $souscription->id,
+                'type_logement' => $souscription->type_logement,
+                'numero_page_guide' => $request->numero_page_guide,
+                'lot' => $request->lot,
+                'ilot' => $request->ilot,
+                'numero_villa' => $request->numero_villa,
+                'superficie' => $request->superficie,
+                'surface_batie' => $request->surface_batie,
+                'observations_internes' => $request->observations_internes,
+            ]);
+        }
 
         return redirect()->route('dg.attribution.index')
             ->with('success', "Attribution enregistrée pour la souscription {$souscription->ref_souscription}. Une attestation de réservation peut être générée.")
@@ -464,8 +543,7 @@ class SouscriptionController extends Controller
             return back()->with('error', "Aucune attribution trouvée pour cette souscription.");
         }
         
-        $pdf = Pdf::loadView('documents.attestation_reservation', compact('souscription'))
-            ->setPaper('a4');
+        $pdf = app(DocumentPdfService::class)->render('documents.attestation_reservation', compact('souscription'));
         return $pdf->stream("Attestation_Reservation_{$souscription->ref_souscription}.pdf");
     }
 
@@ -480,9 +558,8 @@ class SouscriptionController extends Controller
         }
 
         $souscription->load(['client.mutuelle', 'projet', 'bienImmobilier', 'operateur']);
-        $pdf = Pdf::loadView('documents.fiche_souscription', compact('souscription'))
-            ->setPaper('a4');
-        return $pdf->download("Fiche_Souscription_{$souscription->ref_souscription}.pdf");
+        $pdf = app(DocumentPdfService::class)->render('documents.fiche_souscription', compact('souscription'));
+        return $pdf->stream("Fiche_Souscription_{$souscription->ref_souscription}.pdf");
     }
 
     public function sendFicheSouscription(Souscription $souscription)
@@ -501,8 +578,7 @@ class SouscriptionController extends Controller
             return redirect()->back()->with('error', 'Email du client introuvable.');
         }
 
-        $pdf = Pdf::loadView('documents.fiche_souscription', compact('souscription'))
-            ->setPaper('a4');
+        $pdf = app(DocumentPdfService::class)->render('documents.fiche_souscription', compact('souscription'));
 
         $sendRouteName = request()->route()?->getName();
         $downloadRouteName = $sendRouteName ? preg_replace('/\.send$/', '', $sendRouteName) : null;
@@ -619,8 +695,7 @@ class SouscriptionController extends Controller
             return redirect()->back()->with('error', 'Validation finale introuvable pour cette souscription.');
         }
         $souscription->load(['client', 'projet', 'attributionLot', 'bienImmobilier']);
-        $pdf = Pdf::loadView('documents.lettre_definitive', compact('souscription', 'validation'))
-            ->setPaper('a4');
+        $pdf = app(DocumentPdfService::class)->render('documents.lettre_definitive', compact('souscription', 'validation'));
         return $pdf->stream("Lettre_Definitive_{$souscription->ref_souscription}.pdf");
     }
 
@@ -629,6 +704,18 @@ class SouscriptionController extends Controller
      */
     public function voirPaiements(Request $request, Souscription $souscription)
     {
+        $souscription->load(['client', 'projet', 'fraisDossier', 'apportInitial']);
+
+        $totalPaye = (float) $souscription->paiements()
+            ->where('statut', 'payé')
+            ->whereIn('type', ['FRAIS_DOSSIER', 'APPORT', 'PROJET'])
+            ->sum('montant');
+
+        $fraisAttendu = (float) ($souscription->frais_souscription ?? ($souscription->fraisDossier->montant ?? 0));
+        $prixLogement = (float) ($souscription->prix_logement ?? 0);
+        $duGlobal = $prixLogement + $fraisAttendu;
+        $resteGlobal = max($duGlobal - $totalPaye, 0);
+
         $query = $souscription->paiements()
             ->whereIn('type', ['FRAIS_DOSSIER', 'APPORT', 'PROJET'])
             ->with('comptable');
@@ -654,8 +741,16 @@ class SouscriptionController extends Controller
             $query->whereDate('date_paiement', '<=', $request->date_fin);
         }
 
-        $paiements = $query->latest()->paginate(20);
+        $paiements = $query->latest('date_paiement')->paginate(config('pagination.per_page'))->withQueryString();
 
-        return view('dg.souscriptions.paiements', compact('souscription', 'paiements'));
+        return view('dg.souscriptions.paiements', compact(
+            'souscription',
+            'paiements',
+            'totalPaye',
+            'fraisAttendu',
+            'prixLogement',
+            'duGlobal',
+            'resteGlobal'
+        ));
     }
 }

@@ -20,10 +20,10 @@ class RoleMiddleware
         }
 
         $user = auth()->user();
-        
-        // if (!in_array($user->role, $roles)) {
-        //     abort(403, 'Vous n\'avez pas les permissions nécessaires pour accéder à cette page.');
-        // }
+
+        if (! in_array($user->role, $roles) && ! ($user->isSuperAdmin() && in_array('super_admin', $roles, true))) {
+            abort(403, 'Vous n\'avez pas les permissions nécessaires pour accéder à cette page.');
+        }
 
         return $next($request);
     }

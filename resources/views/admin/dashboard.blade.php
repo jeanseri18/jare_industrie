@@ -15,11 +15,11 @@
 @endif
 
 <!-- Statistiques générales -->
-<div class="stats-grid mb-4">
+<div class="stats-grid stats-grid--compact mb-4">
     <div class="stat-card">
         <div class="stat-header">
             <span class="stat-title">Utilisateurs</span>
-            <div class="stat-icon icon-blue">
+            <div class="stat-icon icon-black">
                 <i class="fas fa-users"></i>
             </div>
         </div>
@@ -42,7 +42,7 @@
     <div class="stat-card">
         <div class="stat-header">
             <span class="stat-title">Clients</span>
-            <div class="stat-icon icon-green">
+            <div class="stat-icon icon-gray">
                 <i class="fas fa-user-tie"></i>
             </div>
         </div>
@@ -114,132 +114,14 @@
             </span>
         </div>
     </div> -->
-
-    <div class="stat-card">
-        <div class="stat-header">
-            <span class="stat-title">Sauvegardes</span>
-            <div class="stat-icon" style="background: #e0e7ff; color: #4f46e5;">
-                <i class="fas fa-database"></i>
-            </div>
-        </div>
-        <div class="stat-value">{{ $recentBackups->count() }}</div>
-        <div class="stat-footer">
-            @if($stats['lastBackup'])
-                <span class="stat-info">
-                    <i class="fas fa-clock"></i> {{ $stats['lastBackup']->created_at->diffForHumans() }}
-                </span>
-            @else
-                <span class="stat-trend trend-down">
-                    <i class="fas fa-exclamation-triangle"></i> Aucune sauvegarde
-                </span>
-            @endif
-        </div>
-    </div>
 </div>
 
 <!-- Graphiques -->
-<div class="row mb-4">
-    <div class="col-lg-6 mb-4">
-        <div class="data-table-container">
-            <div class="card-header-custom">
-                <h5 class="card-title-custom">
-                    <i class="fas fa-chart-pie me-2"></i>Utilisateurs par rôle
-                </h5>
-            </div>
-            <div style="padding: 20px;">
-                <div id="usersByRoleEmpty" class="empty-state" style="display:none;">
-                    <p></p>
-                </div>
-                <div id="usersByRoleData" data-users='@json($usersByRole)' style="display:none;"></div>
-                <div class="mt-3">
-                    @php
-                        $roleLabels = [
-                            'dg' => 'DG',
-                            'admin_technique' => 'Admin technique',
-                            'operateur' => 'Opérateur',
-                            'comptable' => 'Comptable',
-                            'chef_commercial' => 'Chef commercial',
-                            'client' => 'Client',
-                        ];
-                    @endphp
-                    <table class="table table-sm mb-0">
-                        <tbody>
-                            @foreach(($usersByRole ?? []) as $role => $count)
-                                <tr>
-                                    <td>{{ $roleLabels[$role] ?? $role }}</td>
-                                    <td class="text-end fw-semibold">{{ $count }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+@include('shared.dashboard.charts-section')
 
-    <div class="col-lg-6 mb-4">
-        <div class="data-table-container">
-            <div class="card-header-custom">
-                <h5 class="card-title-custom">
-                    <i class="fas fa-chart-line me-2"></i>Évolution mensuelle
-                </h5>
-            </div>
-            <div style="padding: 30px 20px;">
-                <div class="row text-center">
-                    <div class="col-4">
-                        <div class="metric-box">
-                            <div class="metric-value">{{ $monthlyStats['users']['current'] }}</div>
-                            <div class="metric-label">Utilisateurs ce mois</div>
-                            @if($monthlyStats['users']['current'] > $monthlyStats['users']['previous'])
-                                <div class="metric-change positive">
-                                    <i class="fas fa-arrow-up"></i> +{{ $monthlyStats['users']['current'] - $monthlyStats['users']['previous'] }}
-                                </div>
-                            @else
-                                <div class="metric-change negative">
-                                    <i class="fas fa-arrow-down"></i> {{ $monthlyStats['users']['current'] - $monthlyStats['users']['previous'] }}
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="metric-box">
-                            <div class="metric-value">{{ $monthlyStats['clients']['current'] }}</div>
-                            <div class="metric-label">Clients ce mois</div>
-                            @if($monthlyStats['clients']['current'] > $monthlyStats['clients']['previous'])
-                                <div class="metric-change positive">
-                                    <i class="fas fa-arrow-up"></i> +{{ $monthlyStats['clients']['current'] - $monthlyStats['clients']['previous'] }}
-                                </div>
-                            @else
-                                <div class="metric-change negative">
-                                    <i class="fas fa-arrow-down"></i> {{ $monthlyStats['clients']['current'] - $monthlyStats['clients']['previous'] }}
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="metric-box">
-                            <div class="metric-value">{{ $monthlyStats['souscriptions']['current'] }}</div>
-                            <div class="metric-label">Souscriptions ce mois</div>
-                            @if($monthlyStats['souscriptions']['current'] > $monthlyStats['souscriptions']['previous'])
-                                <div class="metric-change positive">
-                                    <i class="fas fa-arrow-up"></i> +{{ $monthlyStats['souscriptions']['current'] - $monthlyStats['souscriptions']['previous'] }}
-                                </div>
-                            @else
-                                <div class="metric-change negative">
-                                    <i class="fas fa-arrow-down"></i> {{ $monthlyStats['souscriptions']['current'] - $monthlyStats['souscriptions']['previous'] }}
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Activités et Sauvegardes -->
+<!-- Activités récentes -->
 <div class="row mb-4">
-    <div class="col-lg-6 mb-4">
+    <div class="col-lg-12 mb-4">
         <div class="data-table-container">
             <div class="card-header-custom">
                 <h5 class="card-title-custom">
@@ -271,69 +153,6 @@
                         <p>Aucune activité récente</p>
                     </div>
                 @endforelse
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-6 mb-4">
-        <div class="data-table-container">
-            <div class="card-header-custom">
-                <h5 class="card-title-custom">
-                    <i class="fas fa-database me-2"></i>Sauvegardes récentes
-                </h5>
-            </div>
-            <div style="padding: 20px;">
-                @if($stats['lastBackup'])
-                    <div class="info-banner success">
-                        <i class="fas fa-check-circle"></i>
-                        <div>
-                            <strong>Dernière sauvegarde :</strong> {{ $stats['lastBackup']->created_at->diffForHumans() }}<br>
-                            <small>Type : {{ $stats['lastBackup']->type_label }} | Taille : {{ formatBytes($stats['lastBackup']->size) }}</small>
-                        </div>
-                    </div>
-                @else
-                    <div class="info-banner warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <div>
-                            <strong>Attention !</strong><br>
-                            <small>Aucune sauvegarde trouvée</small>
-                        </div>
-                    </div>
-                @endif
-
-                <div class="table-responsive mt-3">
-                    <table class="table-custom">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Type</th>
-                                <th>Taille</th>
-                                <th>Par</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($recentBackups as $backup)
-                                <tr>
-                                    <td>
-                                        <i class="fas fa-calendar-alt text-muted me-2"></i>
-                                        {{ $backup->created_at->format('d/m/Y') }}
-                                    </td>
-                                    <td>
-                                        <span class="badge-custom badge-{{ $backup->status_class }}">
-                                            {{ $backup->type_label }}
-                                        </span>
-                                    </td>
-                                    <td>{{ formatBytes($backup->size) }}</td>
-                                    <td>{{ $backup->user?->name ?? 'Système' }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted">Aucune sauvegarde</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
             </div>
         </div>
     </div>
@@ -401,11 +220,11 @@
 }
 
 .trend-up {
-    color: #10b981;
+    color: #6b7280;
 }
 
 .trend-down {
-    color: #ef4444;
+    color: #ff7200;
 }
 
 .stat-info {
@@ -465,11 +284,11 @@
 }
 
 .metric-change.positive {
-    color: #10b981;
+    color: #6b7280;
 }
 
 .metric-change.negative {
-    color: #ef4444;
+    color: #ff7200;
 }
 
 /* Activity Timeline */
@@ -522,8 +341,8 @@
 }
 
 .info-banner.success {
-    background: #d1fae5;
-    border-color: #059669;
+    background: #f3f4f6;
+    border-color: #9ca3af;
     color: #065f46;
 }
 
@@ -538,33 +357,6 @@
     margin-top: 2px;
 }
 
-/* Custom Table */
-.table-custom {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.table-custom thead th {
-    text-align: left;
-    padding: 12px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #6b7280;
-    text-transform: uppercase;
-    border-bottom: 2px solid #e5e7eb;
-}
-
-.table-custom tbody td {
-    padding: 14px 12px;
-    border-bottom: 1px solid #f3f4f6;
-    font-size: 14px;
-    color: #111827;
-}
-
-.table-custom tbody tr:hover {
-    background: #f9fafb;
-}
-
 .badge-custom {
     padding: 4px 12px;
     border-radius: 12px;
@@ -573,9 +365,9 @@
 }
 
 .badge-primary { background: #dbeafe; color: #1e40af; }
-.badge-success { background: #d1fae5; color: #065f46; }
+.badge-success { background: #6b7280; color: #fff; }
 .badge-warning { background: #fef3c7; color: #92400e; }
-.badge-danger { background: #fee2e2; color: #991b1b; }
+.badge-danger { background: #ffedd5; color: #c2410c; }
 
 /* Action Buttons */
 .action-btn {
@@ -642,87 +434,3 @@
 </style>
 @endpush
 
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-// Graphique des utilisateurs par rôle
-const ctx = document.getElementById('usersByRoleChart');
-if (ctx) {
-    const usersByRoleDataEl = document.getElementById('usersByRoleData');
-    let usersByRole = {};
-    try {
-        usersByRole = usersByRoleDataEl?.dataset?.users ? JSON.parse(usersByRoleDataEl.dataset.users) : {};
-    } catch (e) {
-        usersByRole = {};
-    }
-    const entries = Object.entries(usersByRole);
-    const roleLabels = {
-        dg: 'DG',
-        admin_technique: 'Admin technique',
-        operateur: 'Opérateur',
-        comptable: 'Comptable',
-        chef_commercial: 'Chef commercial',
-        client: 'Client',
-    };
-    const labels = entries.map(([role, count]) => `${roleLabels[role] ?? role} (${count})`);
-    const values = entries.map(([, count]) => Number(count) || 0);
-
-    const total = values.reduce((sum, v) => sum + v, 0);
-    const emptyEl = document.getElementById('usersByRoleEmpty');
-    if (emptyEl) {
-        emptyEl.style.display = 'none';
-    }
-
-    if (total <= 0) {
-        ctx.style.display = 'none';
-        if (emptyEl) {
-            emptyEl.querySelector('p').textContent = 'Aucune donnée utilisateur';
-            emptyEl.style.display = 'block';
-        }
-    } else if (typeof Chart === 'undefined') {
-        ctx.style.display = 'none';
-        if (emptyEl) {
-            emptyEl.querySelector('p').textContent = 'Graphique indisponible (Chart.js non chargé)';
-            emptyEl.style.display = 'block';
-        }
-    } else {
-        ctx.style.display = 'block';
-
-    const usersByRoleChart = new Chart(ctx.getContext('2d'), {
-        type: 'doughnut',
-        data: {
-            labels,
-            datasets: [{
-                data: values,
-                backgroundColor: [
-                    '#2563eb',
-                    '#10b981',
-                    '#f59e0b',
-                    '#ef4444',
-                    '#8b5cf6',
-                    '#06b6d4'
-                ],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 15,
-                        font: {
-                            size: 13
-                        }
-                    }
-                }
-            },
-            cutout: '65%'
-        }
-    });
-    }
-}
-</script>
-@endpush

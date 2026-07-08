@@ -9,13 +9,22 @@
             <i class="fas fa-plus-circle me-2"></i>
             Créer un Nouveau Bien Immobilier - {{ $projet->nom }}
         </div>
-        <a href="{{ route('dg.projets.biens.index', $projet) }}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Retour à la liste
-        </a>
+        @if(request()->filled('ilot'))
+            <a href="{{ route('dg.projets.lots.ilot.lots', [$projet, request('ilot')]) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Retour aux lots (îlot)
+            </a>
+        @else
+            <a href="{{ route('dg.projets.biens.index', $projet) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Retour à la liste
+            </a>
+        @endif
     </div>
     <div style="padding: 20px;">
         <form method="POST" action="{{ route('dg.projets.biens.store', $projet) }}" class="needs-validation" novalidate>
             @csrf
+            @if(request()->filled('ilot'))
+                <input type="hidden" name="ilot" value="{{ request('ilot') }}">
+            @endif
             
             <div class="row">
                 <div class="col-md-6">
@@ -314,9 +323,15 @@
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save"></i> Créer
                 </button>
-                <a href="{{ route('dg.projets.biens.index', $projet) }}" class="btn btn-secondary">
-                    <i class="fas fa-times"></i> Annuler
-                </a>
+                @if(request()->filled('ilot'))
+                    <a href="{{ route('dg.projets.lots.ilot.lots', [$projet, request('ilot')]) }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Annuler
+                    </a>
+                @else
+                    <a href="{{ route('dg.projets.biens.index', $projet) }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Annuler
+                    </a>
+                @endif
             </div>
         </form>
     </div>

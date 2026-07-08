@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToOrganization;
+use App\Support\CurrentOrganization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,7 +11,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Mutuelle extends Model
 {
+    use BelongsToOrganization;
+
     protected $fillable = [
+        'organization_id',
         'nom',
         'code',
         'description',
@@ -34,7 +39,13 @@ class Mutuelle extends Model
 
         static::creating(function ($mutuelle) {
             if (empty($mutuelle->code)) {
-                $mutuelle->code = 'MUT-' . str_pad(static::max('id') + 1, 4, '0', STR_PAD_LEFT);
+                $orgId = $mutuelle->organization_id ?? CurrentOrganization::id();
+                $query = static::withoutGlobalScopes();
+                if ($orgId) {
+                    $query->where('organization_id', $orgId);
+                }
+                $next = ($query->max('id') ?? 0) + 1;
+                $mutuelle->code = 'MUT-'.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
             }
         });
     }

@@ -45,6 +45,17 @@
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
+                        <label for="date_agrement" class="form-label">Date d’agrément</label>
+                        <input type="date" class="form-control @error('date_agrement') is-invalid @enderror"
+                               id="date_agrement" name="date_agrement"
+                               value="{{ old('date_agrement', $projet->date_agrement?->format('Y-m-d')) }}">
+                        @error('date_agrement')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
                         <label for="localisation" class="form-label">Localisation</label>
                         <input type="text" class="form-control @error('localisation') is-invalid @enderror" 
                                id="localisation" name="localisation" value="{{ old('localisation', $projet->localisation) }}">
@@ -54,11 +65,34 @@
                     </div>
                 </div>
             </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="titre_foncier" class="form-label">Titre Foncier</label>
+                        <input type="text" class="form-control @error('titre_foncier') is-invalid @enderror"
+                               id="titre_foncier" name="titre_foncier" value="{{ old('titre_foncier', $projet->titre_foncier) }}">
+                        @error('titre_foncier')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="circonscription_fonciere" class="form-label">Circonscription foncière</label>
+                        <input type="text" class="form-control @error('circonscription_fonciere') is-invalid @enderror"
+                               id="circonscription_fonciere" name="circonscription_fonciere" value="{{ old('circonscription_fonciere', $projet->circonscription_fonciere) }}">
+                        @error('circonscription_fonciere')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
             </div>
 
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
+                        <label for="superficie" class="form-label">Superficie (m²)</label>
                         <input type="number" step="0.01" class="form-control @error('superficie') is-invalid @enderror" 
                                id="superficie" name="superficie" value="{{ old('superficie', $projet->superficie) }}" min="0">
                         @error('superficie')

@@ -10,7 +10,7 @@ use App\Models\Paiement;
 use App\Models\Souscription;
 use App\Models\FraisDossier;
 use App\Models\ApportInitial;
-use Illuminate\Support\Facades\DB;
+use App\Services\DashboardChartService;
 
 class DashboardController extends Controller
 {
@@ -78,25 +78,27 @@ class DashboardController extends Controller
             return $paye > 0;
         })->count();
         
-        $souscriptionsEnAttente = $souscriptionsTotalCount - $clientsSoldes - $paiementsEnCours;
+        $souscriptionsEnAttente = max($souscriptionsTotalCount - $clientsSoldes - $paiementsEnCours, 0);
 
         // Total Restant Global (Sum of all remaining amounts)
         $totalPrixLogements = Souscription::sum('prix_logement');
         $totalFraisDossier = FraisDossier::sum('montant');
         $totalAttendu = $totalPrixLogements + $totalFraisDossier;
-        $totalRestant = $totalAttendu - $totalEncaisse;
+        $totalRestant = max($totalAttendu - $totalEncaisse, 0);
 
-        // 5. Charts
-        $byProject = DB::table('paiements')
-            ->join('souscriptions', 'paiements.dossier_id', '=', 'souscriptions.id')
-            ->join('projets', 'souscriptions.programme', '=', 'projets.id')
-            ->where('paiements.statut', '=', 'payé')
-            ->select('projets.nom as projet_nom', DB::raw('SUM(paiements.montant) as total'))
-            ->groupBy('projets.nom')
-            ->get();
-    
-        $barChartLabels = $byProject->pluck('projet_nom')->toArray();
-        $barChartValues = $byProject->pluck('total')->map(function ($v) { return (float) $v; })->toArray();
+        $charts = app(DashboardChartService::class);
+        $chartDonut = array_merge(
+            ['title' => 'Répartition des souscriptions'],
+            $charts->souscriptionStatusDonut($souscriptionsEnAttente, $paiementsEnCours, $clientsSoldes)
+        );
+        $chartLine = array_merge(
+            ['title' => 'Encaissements mensuels', 'currency' => true, 'chartLabel' => 'Encaissements (FCFA)'],
+            $charts->monthlyEncaissements()
+        );
+        $chartBar = array_merge(
+            ['title' => 'Encaissements par projet', 'chartLabel' => 'Montant (FCFA)', 'currency' => true],
+            $charts->encaissementsByProject()
+        );
 
         // Projects list for filter
         $projets = Projet::all();
@@ -108,7 +110,7 @@ class DashboardController extends Controller
             'apportInitialTotalAmount', 'apportInitialPaye', 'apportInitialReste', 'apportInitialCountTotal', 'apportInitialCountSoldes',
             'projetTotalAttendu', 'projetTotalPaye', 'projetTotalReste', 'projetCountTotal', 'projetCountSoldes',
             'souscriptionsEnAttente', 'paiementsEnCours', 'clientsSoldes',
-            'barChartLabels', 'barChartValues', 'projets'
+            'chartDonut', 'chartLine', 'chartBar', 'projets'
         ));
     }
 

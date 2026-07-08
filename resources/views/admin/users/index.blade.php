@@ -1,92 +1,72 @@
 @extends('layouts.admin')
 
 @section('title', 'Gestion des Utilisateurs')
-@section('subtitle', 'Liste des utilisateurs du système')
 
 @section('content')
-<div class="data-table-container">
-    <div class="card-header-custom d-flex justify-content-between align-items-center">
-        <div class="card-title-custom">
-            <i class="fas fa-users me-2"></i>
-            Liste des Utilisateurs
-        </div>
-        <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Créer un utilisateur
+<x-page-header title="Liste des utilisateurs">
+    <x-slot:actions>
+        <a href="{{ route('admin.users.create') }}" class="btn-primary">
+            <i class="fas fa-plus me-1"></i> Créer un utilisateur
         </a>
-    </div>
-    <div style="padding: 20px;">
-        <form method="GET" action="{{ route('admin.users.index') }}" class="row g-2 mb-3">
-            <div class="col-md-5">
-                <input type="text" name="search" class="form-control" placeholder="Nom, email, téléphone..." value="{{ request('search') }}">
-            </div>
-            <div class="col-md-4">
-                <select name="role" class="form-select">
-                    <option value="">Tous les rôles</option>
-                    @foreach(($roles ?? []) as $role)
-                        <option value="{{ $role }}" {{ request('role') === $role ? 'selected' : '' }}>
-                            {{ getUserRoleLabel($role) }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-3 d-flex gap-2">
-                <button class="btn btn-primary" type="submit">
-                    <i class="fas fa-filter"></i> Filtrer
-                </button>
-                <a class="btn btn-outline-secondary" href="{{ route('admin.users.index') }}">Réinitialiser</a>
-            </div>
-        </form>
+    </x-slot:actions>
+</x-page-header>
+<x-alert />
 
-    <div class="table-responsive">
-            <table class="table-custom">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nom</th>
-                        <th>Email</th>
-                        <th>Rôle</th>
-                        <th>Date de création</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($users as $user)
-                    <tr>
-                        <td>
-                            <i class="fas fa-user text-muted me-2"></i>
-                            {{ $user->id }}
-                        </td>
-                        <td>{{ $user->name }}</td>
-                        <td>{{ $user->email }}</td>
-                        <td>
-                            <span class="badge-custom badge-info">{{ getUserRoleLabel($user->role) }}</span>
-                        </td>
-                        <td>{{ $user->created_at->format('d/m/Y') }}</td>
-                        <td>
-                            <div class="btn-group">
-                                @if($user->role !== 'client')
-                                    <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <form action="{{ route('admin.users.destroy', $user) }}" method="POST" style="display: inline;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                @else
-                                    <span class="text-muted">—</span>
-                                @endif
-                            </div>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-        <div class="mt-3">
-            {{ $users->links('pagination::bootstrap-5') }}
-        </div>
+<x-filter-bar action="{{ route('admin.users.index') }}">
+    <div>
+        <label class="form-label">Recherche</label>
+        <input type="text" name="search" class="form-input" placeholder="Nom, email, téléphone..." value="{{ request('search') }}">
     </div>
+    <div>
+        <label class="form-label">Rôle</label>
+        <select name="role" class="form-select">
+            <option value="">Tous les rôles</option>
+            @foreach(($roles ?? []) as $role)
+                <option value="{{ $role }}" {{ request('role') === $role ? 'selected' : '' }}>{{ getUserRoleLabel($role) }}</option>
+            @endforeach
+        </select>
+    </div>
+</x-filter-bar>
+
+<x-data-table>
+    <x-slot:head>
+        <tr>
+            <th>ID</th>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Rôle</th>
+            <th>Date de création</th>
+            <th>Actions</th>
+        </tr>
+    </x-slot:head>
+    @forelse($users as $user)
+        <tr>
+            <td>{{ $user->id }}</td>
+            <td>{{ $user->name }}</td>
+            <td>{{ $user->email }}</td>
+            <td><span class="badge-custom badge-info">{{ getUserRoleLabel($user->role) }}</span></td>
+            <td>{{ $user->created_at->format('d/m/Y') }}</td>
+            <td>
+                @if($user->role !== 'client')
+                    <x-action-dropdown>
+                        <li><a href="{{ route('admin.users.edit', $user) }}" class="dropdown-item"><i class="fas fa-edit"></i> Modifier</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form action="{{ route('admin.users.destroy', $user) }}" method="POST" class="action-dropdown-form" onsubmit="return confirm('Supprimer cet utilisateur ?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="dropdown-item text-danger"><i class="fas fa-trash"></i> Supprimer</button>
+                            </form>
+                        </li>
+                    </x-action-dropdown>
+                @else
+                    <span class="text-muted">—</span>
+                @endif
+            </td>
+        </tr>
+    @empty
+        <tr><td colspan="6"><x-empty-state title="Aucun utilisateur" /></td></tr>
+    @endforelse
+</x-data-table>
+<x-pagination :paginator="$users" />
 @endsection

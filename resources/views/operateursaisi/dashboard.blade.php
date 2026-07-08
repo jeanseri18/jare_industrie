@@ -2,46 +2,42 @@
 
 @section('content')
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        .app-user-avatar-sm { width: 2rem; height: 2rem; font-size: 0.75rem; }
+        .app-user-avatar-lg { width: 3rem; height: 3rem; font-size: 1rem; }
 
-        body {
+        .operateur-dashboard {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background-color: #f5f5f5;
-            padding: 0px !important;
-            margin: 0px !important;
         }
 
-        .header {
-            background: linear-gradient(135deg, #003d82 0%, #0056b3 100%);
+        .operateur-dashboard .header {
+            background: #000;
             color: white;
-            padding: 30px 0px;
-            width: 100vw;
-            margin-left: calc(-50vw + 50%);
-            margin-right: calc(-50vw + 50%);
+            padding: 2rem 1.5rem 2.5rem;
+            width: 100%;
+            margin: 0;
         }
 
-        .header-title {
-            font-size: 28px;
+        .operateur-dashboard .header-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .operateur-dashboard .header-title {
+            font-size: 1.75rem;
             font-weight: 600;
-            margin-bottom: 25px;
+            margin: 0 0 1.5rem;
+            line-height: 1.3;
         }
 
-        .profile {
+        .operateur-dashboard .profile {
             display: flex;
             align-items: center;
             gap: 15px;
             margin-bottom: 30px;
         }
 
-        .profile-pic {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background-color: #ddd;
+        .operateur-dashboard .profile-pic {
+            display: none;
         }
 
         .profile-info {
@@ -70,7 +66,8 @@
             display: flex;
             align-items: center;
             gap: 15px;
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             padding: 15px 20px;
             border-radius: 8px;
             min-width: 180px;
@@ -144,16 +141,17 @@
             border-radius: 2px;
         }
 
-        .main-content {
-            padding: 30px !important;
+        .operateur-dashboard .main-content {
+            padding: 1.5rem !important;
             width: 100% !important;
-            max-width: none !important;
-            margin: 0 !important;
+            max-width: 1400px !important;
+            margin: 0 auto !important;
         }
         
-        .stats, .toolbar, .section-header, .table-container {
-            padding-left: 20px !important;
-            padding-right: 20px !important;
+        .operateur-dashboard .toolbar,
+        .operateur-dashboard .section-header {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
         }
 
         .toolbar {
@@ -188,7 +186,7 @@
         }
 
         .btn-primary {
-            background-color: #2c5282;
+            background-color: #ff7200;
             color: white;
             border: none;
             padding: 12px 30px;
@@ -199,7 +197,7 @@
         }
 
         .btn-primary:hover {
-            background-color: #234166;
+            background-color: #e66500;
         }
 
         .section-header {
@@ -219,98 +217,22 @@
             background-color: white;
             border: 1px solid #ddd;
             padding: 8px 20px;
-            border-radius: 6px;
+            border-radius: var(--ui-radius, 0.75rem);
             font-size: 14px;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 8px;
         }
-
-        .table-container {
-            background-color: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            width: 100%;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 100%;
-        }
-
-        th {
-            background-color: #f8f9fa;
-            padding: 15px;
-            text-align: left;
-            font-size: 13px;
-            font-weight: 600;
-            color: #333;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        td {
-            padding: 15px;
-            font-size: 14px;
-            color: #555;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        tr:hover {
-            background-color: #f8f9fa;
-        }
-
-        .status-badge {
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-            display: inline-block;
-        }
-
-        .status-valide {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .status-attente {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-
-        .status-corriger {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-
-        .btn-voir {
-            background-color: #2c5282;
-            color: white;
-            border: none;
-            padding: 6px 20px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .btn-voir:hover {
-            background-color: #234166;
-        }
     </style>
 
+    <div class="operateur-dashboard">
     <div class="header">
-        <div style="padding:40px">
+        <div class="header-inner">
         <h1 class="header-title">Opératrice de saisie</h1>
         
         <div class="profile">
-            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50'%3E%3Ccircle cx='25' cy='25' r='25' fill='%23ddd'/%3E%3Cpath d='M25 25c4 0 7-3 7-7s-3-7-7-7-7 3-7 7 3 7 7 7zm0 3c-5 0-15 2.5-15 7.5V40h30v-4.5c0-5-10-7.5-15-7.5z' fill='%23999'/%3E%3C/svg%3E" alt="Profile" class="profile-pic">
+            <x-user-avatar :user="$user" size="lg" />
             <div class="profile-info">
                 <span class="profile-label">Bienvenue</span>
                 <span class="profile-name">{{ $user->name ?? $user->email }}</span>
@@ -377,7 +299,7 @@
         </div>
     </div>
 
-    <div class="main-content"          style="padding:40px">
+    <div class="main-content">
         <div class="toolbar">
             <div class="search-box">
                 <input type="text" placeholder="Rechercher un dossier">
@@ -393,8 +315,9 @@
             <button class="filter-btn">Filtrer <img src="{{ asset('operateur/souscription 2.png') }}" alt="Filtrer" style="width: 16px; height: 16px; margin-left: 5px;"></button>
         </div>
 
-        <div class="table-container">
-            <table>
+        <div class="data-table-container">
+            <div class="table-responsive">
+            <table class="table-custom">
                 <thead>
                     <tr>
                         <th>Réf. Souscription</th>
@@ -438,16 +361,17 @@
                     @endforelse
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
 
-    </div>
+    </div>{{-- .operateur-dashboard --}}
 
     <!-- Modal pour afficher les détails complets de la souscription -->
     <div id="subscriptionModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
         <div class="modal-content" style="background-color: white; margin: 5% auto; padding: 20px; border-radius: 8px; width: 80%; max-width: 800px; max-height: 80vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #f0f0f0;">
-                <h2 style="margin: 0; color: #2c5282;">Détails complets de la souscription</h2>
+                <h2 style="margin: 0; color: #111827;">Détails complets de la souscription</h2>
                 <span onclick="closeModal()" style="color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
             </div>
             
@@ -466,7 +390,7 @@
         }
         
         .detail-group h3 {
-            color: #2c5282;
+            color: #111827;
             margin-bottom: 10px;
             font-size: 16px;
         }
@@ -498,7 +422,7 @@
         }
         
         .modal-close-btn {
-            background-color: #6c757d;
+            background-color: #111827;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -508,7 +432,7 @@
         }
         
         .modal-close-btn:hover {
-            background-color: #5a6268;
+            background-color: #000;
         }
     </style>
 

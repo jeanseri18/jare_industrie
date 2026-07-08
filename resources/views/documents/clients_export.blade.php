@@ -5,7 +5,10 @@
     <title>Export clients</title>
     <style>
         @page { margin: 0.8cm 1cm; }
-        body { font-family: Arial, sans-serif; font-size: 10px; color: #111; }
+        body { font-family: Arial, sans-serif; font-size: 10px; color: #111; margin: 0; padding: 0; }
+        .watermark { position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 0; text-align: center; }
+        .watermark img { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 96%; max-width: 96%; opacity: 0.06; }
+        .content { position: relative; z-index: 1; }
         .title { text-align: center; font-size: 16px; font-weight: 700; margin-bottom: 6px; color: #004A80; }
         .subtitle { text-align: center; font-size: 11px; margin-bottom: 10px; }
         .filters { font-size: 9px; margin-bottom: 10px; color: #333; }
@@ -14,10 +17,25 @@
         th { background: #f2f6ff; color: #004A80; text-transform: uppercase; font-size: 9px; }
         .muted { color: #666; }
     </style>
+    @include('documents.partials._brand_styles')
 </head>
 <body>
-    <div class="title">JARE INDUSTRIES</div>
-    <div class="subtitle">Export des clients</div>
+    @include('documents.partials._watermark')
+    <div class="content">
+    @php
+        $qrUrl = route('dg.clients.export.pdf', array_filter($filters ?? []));
+        $legalName = $brand?->displayName() ?? config('app.name');
+    @endphp
+
+    <div style="display:flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+            <div class="title">{{ $legalName }}</div>
+            <div class="subtitle">Export des clients</div>
+        </div>
+        <div style="text-align:right;">
+            <img src="data:image/svg+xml;base64, {{ base64_encode(\SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(70)->generate($qrUrl)) }}" >
+        </div>
+    </div>
 
     <div class="filters">
         <strong>Filtres :</strong>
@@ -60,5 +78,6 @@
             @endforeach
         </tbody>
     </table>
+    </div>
 </body>
 </html>

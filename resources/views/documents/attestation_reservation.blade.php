@@ -13,6 +13,19 @@
             line-height: 1.3;
             color: #000;
         }
+        .watermark {
+            position: fixed;
+            top: 12%;
+            left: 6%;
+            width: 88%;
+            text-align: center;
+            opacity: 0.10;
+            z-index: 0;
+        }
+        .watermark img {
+            width: 100%;
+            height: auto;
+        }
         .header-table {
             width: 100%;
             border-collapse: collapse;
@@ -36,7 +49,7 @@
         .company-name {
             font-size: 22px;
             font-weight: 900;
-            color: #E30613;
+            color: #ff7200;
             text-transform: uppercase;
             margin: 0;
         }
@@ -48,7 +61,7 @@
             margin: 0;
         }
         .doc-title-box {
-            background-color: #E30613;
+            background-color: #ff7200;
             color: white;
             font-weight: bold;
             font-size: 16px;
@@ -119,8 +132,16 @@
             padding-left: 15px;
             position: relative;
         }
+        /* Glyphes ✓ : police PDF (DomPDF) — Arial n'a pas ▶/✓ embarqués → affichage "?" */
+        .pdf-glyph {
+            font-family: "DejaVu Sans", sans-serif;
+            font-weight: bold;
+            color: #004A80;
+        }
         .amenities-list li:before {
-            content: "▶";
+            content: "\2713";
+            font-family: "DejaVu Sans", sans-serif;
+            font-weight: bold;
             position: absolute;
             left: 0;
             color: #004A80;
@@ -163,30 +184,74 @@
             line-height: 1.2;
         }
         .page-content {
-            padding-bottom: 40px; /* Space for footer */
+            padding-bottom: 65px; /* Space for footer */
+            position: relative;
+            z-index: 1;
         }
     </style>
+    @include('documents.partials._brand_styles')
 </head>
 <body>
+    @include('documents.partials._watermark')
+    @php
+        $projet = $souscription->projet;
+        $bien = $souscription->bienImmobilier;
+
+        // Ces informations restent FIXES (comme sur le modèle)
+        $directeurGeneralNom = $brand?->director_name ?? '—';
+        $societeNom = $brand?->displayName() ?? config('app.name');
+        $agrementPromoteurFixe = '21-0041/MCLU/DGLCV/CAPPI/Olga';
+        $dateAgrementPromoteurFixe = '12 juillet 2021';
+        $siegeSocialFixe = "ABIDJAN COCODY,LES DEUX PLATEAUX, MACACI, Villa 150, lot 53, Boulevard latrille, 28 Boîte Postale 70 ABIDJAN 28 République de COTE D’IVOIRE";
+        $ministereFixe = "le ministère de la construction du logement et de l’urbanisme";
+        // NB: l’agrément Programme numéro correspond au numéro d’agrément du projet (BD)
+
+        // Champs venant de la BD (uniquement ceux demandés)
+        $agrementPromoteur = $projet?->numero_agrement ?? '—';
+        $dateAgrementFormatee = $projet?->date_agrement?->format('d/m/Y') ?? null;
+        $nbLogements = $projet?->nb_logements ?? '—';
+        $localisation = $projet?->localisation ?? '—';
+
+        // Champs optionnels (foncier) si présents en base
+        $siegeSocial = $siegeSocialFixe;
+        $titreFoncier = $projet?->titre_foncier ?? null;
+        // La "circonscription foncière" est souvent la localisation du projet
+        $circonscriptionFoncier = $projet?->circonscription_fonciere ?? $projet?->localisation ?? null;
+        $villeSignature = $projet?->ville_signature ?? $projet?->ville ?? null;
+        $contactAdresse = $projet?->contact_adresse ?? null;
+        $contactTelephone = $projet?->contact_telephone ?? null;
+        $contactWhatsapp = $projet?->contact_whatsapp ?? null;
+        $contactEmail = $projet?->contact_email ?? null;
+        $societeRccm = $projet?->societe_rccm ?? null;
+        $societeCc = $projet?->societe_cc ?? null;
+    @endphp
+
     <div class="page-content">
         <table class="header-table">
             <tr>
                 <td class="logo-cell">
-                    @if(file_exists(public_path('LOGO.png')))
-                        <img src="{{ public_path('LOGO.png') }}" style="max-width: 100px;">
-                    @else
-                        <div style="color:red; font-weight:bold;">JARE<br>INDUSTRIES</div>
+                    @php $logoSrc = $brand?->logoDataUri() ?? $brand?->logoAbsolutePath(); @endphp
+                    @if($logoSrc)
+                        <img src="{{ $logoSrc }}" style="max-width: 100px;">
                     @endif
                 </td>
                 <td class="title-cell">
-                    <div class="company-name">JARE INDUSTRIES</div>
-                    <div class="company-sub">PROMOTEUR IMMOBILIER AGRÉÉ</div>
+                    <div class="company-name">{{ strtoupper($societeNom ?? '—') }}</div>
+                    <div class="company-sub">{{ strtoupper($brand?->tagline ?? 'PROMOTEUR IMMOBILIER AGRÉÉ') }}</div>
                     <div style="font-size: 10px; font-weight: 700; color: #004A80; margin-top: 4px;">
-                        N° d’agrément du promoteur : {{ $souscription->projet->numero_agrement ?? '—' }}
+                        N° d’agrément du promoteur : {{ $souscription->projet?->numero_agrement ?? '—' }}
                     </div>
+                    @if($dateAgrementFormatee)
+                    <div style="font-size: 10px; font-weight: 700; color: #004A80; margin-top: 2px;">
+                        Date d’agrément : {{ $dateAgrementFormatee }}
+                    </div>
+                    @endif
                 </td>
                 <td class="qr-cell">
-                    <img src="data:image/svg+xml;base64, {{ base64_encode(\SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(80)->generate($souscription->ref_souscription)) }}" >
+                    @php
+                        $qrUrl = \Illuminate\Support\Facades\URL::signedRoute('public.souscriptions.attestation-reservation', ['souscription' => $souscription->id]);
+                    @endphp
+                    <img src="data:image/svg+xml;base64, {{ base64_encode(\SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(80)->generate($qrUrl)) }}" >
                 </td>
             </tr>
         </table>
@@ -196,17 +261,20 @@
         </div>
 
         <div class="ref-number">
-            N° RKDG_2026/GDA/{{ $souscription->id }}/{{ $souscription->attributionLot->ilot ?? '...' }}-L{{ $souscription->attributionLot->lot ?? '...' }}
+            N° RKDG_{{ now()->format('Y') }}/GDA/{{ $souscription->id }}/{{ $souscription->attributionLot->ilot ?? '...' }}-L{{ $souscription->attributionLot->lot ?? '...' }}
         </div>
 
         <div class="intro-text">
-            Je soussigné, Monsieur <strong>Roland KOUAKOU</strong>, Directeur Général de la société <strong>JARE INDUSTRIES</strong>,
-            <strong>Promoteur Immobilier Agréé sous le N°{{ $souscription->projet->numero_agrement ?? '—' }}</strong>. Ayant son siège social
-            à ABIDJAN COCODY, LES DEUX PLATEAUX, MACACI, Villa 150, lot 53, Boulevard latrille, 28 Boîte Postale 70
-            ABIDJAN 28 République de COTE D'IVOIRE.<br>
-            La Société <strong>JARE INDUSTRIES</strong> réalise en ce moment une cité de <strong>406</strong> logements dénommée <strong>« {{ strtoupper($souscription->projet->nom ?? 'CITE ALAIN - RICHARD DONWAHI') }} »</strong> à Ebimpé dans la commune d'Anyama objet de l'agrément Programme numéro :
-            <strong>22-00014/MCLU/DGLCV/CAPPI/ogla du 21 avril 2022</strong> délivré par le ministère de la construction du logement et de
-            l'urbanisme.
+            Je soussigné, Monsieur <strong>{{ $directeurGeneralNom }}</strong>, Directeur Général de la société <strong>{{ strtoupper($societeNom) }}</strong>,
+            <strong>Promoteur Immobilier Agréé sous le N°{{ $agrementPromoteurFixe }}</strong> du {{ $dateAgrementPromoteurFixe }}. Ayant son siège social
+            à {{ $siegeSocialFixe }}.
+            <br>
+            La Société <strong>{{ strtoupper($societeNom) }}</strong> réalise en ce moment une cité de <strong>{{ $nbLogements }}</strong> logements dénommée
+            <strong>« {{ strtoupper($projet?->nom ?? '—') }} »</strong>
+            @if($localisation !== '—')
+                à {{ $localisation }}
+            @endif
+            objet de l’agrément Programme numéro : <strong>{{ $agrementPromoteur }}</strong>@if($dateAgrementFormatee) du {{ $dateAgrementFormatee }}@endif délivré par {{ $ministereFixe }}.
         </div>
 
         <div class="certify-header">
@@ -239,13 +307,20 @@
                 <td colspan="2">
                     <span class="label">CNI/ N°</span>
                     <span style="border-bottom: 1px dotted #000; padding: 0 10px; width: 150px; display:inline-block;">{{ $souscription->client->numero_piece ?? $souscription->numero_piece ?? '.............................' }}</span>
-                    {{-- ligne de validité commentée à la demande --}}
+                    <span class="label" style="margin-left: 10px;">valide du</span>
+                    <span style="border-bottom: 1px dotted #000; padding: 0 10px; width: 120px; display:inline-block;">
+                        {{ ($souscription->client->date_delivrance_piece ?? $souscription->date_delivrance_piece) ? ($souscription->client->date_delivrance_piece ?? $souscription->date_delivrance_piece)->format('d/m/Y') : '...../...../.......' }}
+                    </span>
+                    <span class="label" style="margin-left: 10px;">au</span>
+                    <span style="border-bottom: 1px dotted #000; padding: 0 10px; width: 120px; display:inline-block;">
+                        {{ ($souscription->client->date_expiration_piece ?? $souscription->date_expiration_piece) ? ($souscription->client->date_expiration_piece ?? $souscription->date_expiration_piece)->format('d/m/Y') : '...../...../.......' }}
+                    </span>
                 </td>
             </tr>
         </table>
 
         <div class="project-header">
-            Est réservataire dans la {{ $souscription->projet->nom ?? 'Cité Alain-Richard DONWAHI 1' }} à Ebimpé Anyama de
+            Est réservataire dans la {{ $souscription->projet?->nom ?? '—' }} @if($localisation !== '—') à {{ $localisation }} @else à — @endif de
         </div>
 
         <div class="villa-desc">
@@ -253,12 +328,12 @@
         </div>
 
         <div style="margin-bottom: 5px; font-weight: bold; color: #333;">
-            ▶ ILOT : <span style="border-bottom: 1px dotted #000;">{{ $souscription->attributionLot->ilot ?? '.......' }}</span>
+            <span class="pdf-glyph">&#10003;</span> ILOT : <span style="border-bottom: 1px dotted #000;">{{ $souscription->attributionLot->ilot ?? '.......' }}</span>
             <span style="margin-left: 20px;">LOT : </span><span style="border-bottom: 1px dotted #000;">{{ $souscription->attributionLot->lot ?? '.......' }}</span>
         </div>
         <div style="margin-bottom: 10px; font-weight: bold; color: #333;">
-            ▶ Surface totale : <span style="border-bottom: 1px dotted #000;">{{ $souscription->attributionLot->superficie ?? '.......' }}</span> m2
-            <span style="margin-left: 20px;">Surface bâtie : </span><span style="border-bottom: 1px dotted #000;">{{ optional($souscription->bienImmobilier)->surface_habitable ?? '....................' }}</span> m2
+            <span class="pdf-glyph">&#10003;</span> Surface totale : <span style="border-bottom: 1px dotted #000;">{{ $souscription->attributionLot->superficie ?? '.......' }}</span> m2
+            <span style="margin-left: 20px;">Surface bâtie : </span><span style="border-bottom: 1px dotted #000;">{{ $souscription->attributionLot->surface_batie ?? optional($souscription->bienImmobilier)->surface_habitable ?? '....................' }}</span> m2
         </div>
 
         @php
@@ -295,11 +370,11 @@
         @endif
 
         <div class="land-title-info">
-            A détacher par voie de morcellement du Titre Foncier n°203788 de la Circonscription
+            A détacher par voie de morcellement du Titre Foncier n°{{ $titreFoncier ?? '—' }} de la Circonscription
         </div>
         
         <div style="margin-bottom: 10px; font-size: 10px;">
-            Foncière d'ANYAMAN et après le paiement intégral du prix du logement :
+            Foncière {{ $circonscriptionFoncier ? "de {$circonscriptionFoncier}" : '—' }} et après le paiement intégral du prix du logement :
         </div>
 
         <table class="financial-table">
@@ -308,14 +383,25 @@
                 <td style="border-bottom: 1px dotted #000;">{{ number_format($souscription->prix_logement, 0, ',', ' ') }} FCFA</td>
             </tr>
             <tr>
+                <td style="font-weight:bold;">FRAIS DE DOSSIER PAYÉS :</td>
+                <td style="border-bottom: 1px dotted #000;">
+                    {{ number_format($fraisDossierPaye ?? 0, 0, ',', ' ') }} FCFA
+                </td>
+            </tr>
+            <tr>
                 <td style="font-weight:bold;">ACOMPTE PAYE :</td>
                 <td style="border-bottom: 1px dotted #000;">
                     @php
                         $totalPaye = $souscription->paiements()->where('statut', 'payé')->sum('montant');
+                        $fraisDossierPaye = $souscription->paiements()
+                            ->where('statut', 'payé')
+                            ->where('type', 'FRAIS_DOSSIER')
+                            ->sum('montant');
                     @endphp
                     {{ number_format($totalPaye, 0, ',', ' ') }} FCFA
                 </td>
             </tr>
+           
             <tr>
                 <td style="font-weight:bold;">RESTE À PAYER :</td>
                 <td style="border-bottom: 1px dotted #000;">
@@ -335,7 +421,7 @@
                     <div style="font-size: 8px; font-style: italic;">(Précédé de la mention « Lu et approuvé »)</div>
                 </td>
                 <td style="width: 50%; text-align: right; vertical-align: top;">
-                    <div style="margin-bottom: 5px;">Fait à ABIDJAN le {{ now()->format('d/m/Y') }}</div>
+                    <div style="margin-bottom: 5px;">Fait à {{ $villeSignature ?? '—' }} le {{ now()->format('d/m/Y') }}</div>
                     <div style="font-size: 9px; margin-bottom: 5px;">(En deux copies originales)</div>
                     <div style="color: #004A80; font-weight: bold;">Le Directeur Général</div>
                 </td>
@@ -343,10 +429,6 @@
         </table>
     </div>
 
-    <div class="footer">
-        Siège Social : Abidjan Cocody - 2 Plateaux Macaci non loin de la Pharmacie ORCHID - Cité Sicogi Villa 280 Lot 53 - ilot 19<br>
-        28 B.P .70 ABIDJAN 28 - Tel : +225 21 20 80 54 20 / 07 03 94 03 14 - Whatsapp : +225 07 03 94 03 14 / 07 12 42 42 42<br>
-        RCCM : CI-ABJ-03-2023-M-11022 - CC N° : 1517590M - E-mail- : emmanuela.kore@jare-indudtries.com
-    </div>
+    @include('documents.partials._pdf_footer')
 </body>
 </html>

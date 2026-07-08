@@ -8,6 +8,6 @@
     <p>Bonjour,</p>
     <p>Veuillez trouver en pièce jointe votre fiche de souscription {{ $souscription->ref_souscription ?? '' }}.</p>
     <p>Merci de l’imprimer, la signer et nous la retourner.</p>
-    <p>Cordialement,<br>JARE INDUSTRIES</p>
+    <p>Cordialement,<br>{{ $brand?->displayName() ?? config('app.name') }}</p>
 </body>
 </html>

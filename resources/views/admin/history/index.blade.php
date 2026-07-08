@@ -4,77 +4,59 @@
 @section('subtitle', 'Journal des activités du système')
 
 @section('content')
-<div class="data-table-container">
-    <div class="card-header-custom">
-        <h5 class="card-title-custom">
-            <i class="fas fa-history me-2"></i>Historique des Actions
-        </h5>
-        <div class="btn-group">
-            <button class="btn btn-outline-secondary" onclick="window.print()">
-                <i class="fas fa-print"></i> Imprimer
-            </button>
-            <button class="btn btn-outline-primary" onclick="exportToCSV()">
-                <i class="fas fa-download"></i> Exporter CSV
-            </button>
-        </div>
-    </div>
+<x-page-header title="Historique des actions">
+    <x-slot:actions>
+        <button type="button" class="btn-secondary" onclick="window.print()">
+            <i class="fas fa-print me-1"></i> Imprimer
+        </button>
+        <button type="button" class="btn-primary" onclick="exportToCSV()">
+            <i class="fas fa-download me-1"></i> Exporter CSV
+        </button>
+    </x-slot:actions>
+</x-page-header>
+<x-alert />
 
-    <div style="padding: 20px;">
-        <form method="GET" action="{{ route('admin.history.index') }}" class="row g-3">
-            <div class="col-md-3">
-                <label for="user" class="form-label">Utilisateur</label>
-                <select class="form-select" id="user" name="user">
-                    <option value="">Tous les utilisateurs</option>
-                    @foreach($users as $user)
-                        <option value="{{ $user->id }}" {{ request('user') == $user->id ? 'selected' : '' }}>
-                            {{ $user->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label for="action" class="form-label">Action</label>
-                <select class="form-select" id="action" name="action">
-                    <option value="">Toutes les actions</option>
-                    <option value="create" {{ request('action') == 'create' ? 'selected' : '' }}>Création</option>
-                    <option value="update" {{ request('action') == 'update' ? 'selected' : '' }}>Modification</option>
-                    <option value="delete" {{ request('action') == 'delete' ? 'selected' : '' }}>Suppression</option>
-                    <option value="login" {{ request('action') == 'login' ? 'selected' : '' }}>Connexion</option>
-                    <option value="logout" {{ request('action') == 'logout' ? 'selected' : '' }}>Déconnexion</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label for="date_from" class="form-label">Date de début</label>
-                <input type="date" class="form-control" id="date_from" name="date_from" value="{{ request('date_from') }}">
-            </div>
-            <div class="col-md-3">
-                <label for="date_to" class="form-label">Date de fin</label>
-                <input type="date" class="form-control" id="date_to" name="date_to" value="{{ request('date_to') }}">
-            </div>
-            <div class="col-md-12">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-search"></i> Filtrer
-                </button>
-                <a href="{{ route('admin.history.index') }}" class="btn btn-secondary">
-                    <i class="fas fa-refresh"></i> Réinitialiser
-                </a>
-            </div>
-        </form>
+<x-list-filters-card action="{{ route('admin.history.index') }}" :reset-url="route('admin.history.index')">
+    <div>
+        <label for="user" class="form-label">Utilisateur</label>
+        <select class="form-select" id="user" name="user">
+            <option value="">Tous les utilisateurs</option>
+            @foreach($users as $user)
+                <option value="{{ $user->id }}" {{ request('user') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+            @endforeach
+        </select>
     </div>
+    <div>
+        <label for="action" class="form-label">Action</label>
+        <select class="form-select" id="action" name="action">
+            <option value="">Toutes les actions</option>
+            <option value="create" {{ request('action') == 'create' ? 'selected' : '' }}>Création</option>
+            <option value="update" {{ request('action') == 'update' ? 'selected' : '' }}>Modification</option>
+            <option value="delete" {{ request('action') == 'delete' ? 'selected' : '' }}>Suppression</option>
+            <option value="login" {{ request('action') == 'login' ? 'selected' : '' }}>Connexion</option>
+            <option value="logout" {{ request('action') == 'logout' ? 'selected' : '' }}>Déconnexion</option>
+        </select>
+    </div>
+    <div>
+        <label for="date_from" class="form-label">Date de début</label>
+        <input type="date" class="form-control" id="date_from" name="date_from" value="{{ request('date_from') }}">
+    </div>
+    <div>
+        <label for="date_to" class="form-label">Date de fin</label>
+        <input type="date" class="form-control" id="date_to" name="date_to" value="{{ request('date_to') }}">
+    </div>
+</x-list-filters-card>
 
-    <div style="padding: 20px;">
-        <div class="table-responsive">
-            <table class="table-custom">
-                <thead>
-                    <tr>
-                        <th>Date & Heure</th>
-                        <th>Utilisateur</th>
-                        <th>Action</th>
-                        <th>Détails</th>
-                        <th>Adresse IP</th>
-                    </tr>
-                </thead>
-                <tbody>
+<x-data-table>
+    <x-slot:head>
+        <tr>
+            <th>Date & heure</th>
+            <th>Utilisateur</th>
+            <th>Action</th>
+            <th>Détails</th>
+            <th>Adresse IP</th>
+        </tr>
+    </x-slot:head>
                     @forelse($activities as $activity)
                     <tr>
                         <td>
@@ -119,15 +101,8 @@
                         </td>
                     </tr>
                     @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="d-flex justify-content-center pb-3">
-        {{ $activities->withQueryString()->onEachSide(1)->links('pagination::bootstrap-5') }}
-    </div>
-</div>
+</x-data-table>
+<x-pagination :paginator="$activities" />
 
 <script>
 function exportToCSV() {

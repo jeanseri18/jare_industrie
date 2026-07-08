@@ -5,8 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use App\Models\Client;
 use App\Models\Projet;
-use App\Models\Souscription;
-use App\Models\Paiement;
+use App\Models\Organization;
 use App\Models\ActivityLog;
 use App\Models\DatabaseBackup;
 use Illuminate\Database\Seeder;
@@ -19,6 +18,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(OrganizationSeeder::class);
+        $orgId = Organization::withoutGlobalScopes()->where('slug', 'jare-industries')->value('id');
+
         // Clear existing data
         $this->command->info('Clearing existing data...');
         \DB::statement('SET FOREIGN_KEY_CHECKS=0');
@@ -32,6 +34,7 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Database cleared successfully!');
         // Create Admin User
         $admin = User::create([
+            'organization_id' => $orgId,
             'name' => 'Administrateur Système',
             'email' => 'admin@jareindustrie.ht',
             'password' => Hash::make('admin123'),
@@ -41,6 +44,7 @@ class DatabaseSeeder extends Seeder
 
         // Create DG User
         $dg = User::create([
+            'organization_id' => $orgId,
             'name' => 'Directeur Général',
             'email' => 'dg@jareindustrie.ht',
             'password' => Hash::make('dg123456'),
@@ -50,6 +54,7 @@ class DatabaseSeeder extends Seeder
 
         // Create Chef Commercial
         $chefCommercial = User::create([
+            'organization_id' => $orgId,
             'name' => 'Chef Commercial',
             'email' => 'commercial@jareindustrie.ht',
             'password' => Hash::make('commercial123'),
@@ -59,6 +64,7 @@ class DatabaseSeeder extends Seeder
         
         // Create Directeur Commercial (Dir Com)
         $dirCom = User::create([
+            'organization_id' => $orgId,
             'name' => 'Directeur Commercial',
             'email' => 'dircom@jareindustrie.ht',
             'password' => Hash::make('dircom123'),
@@ -68,6 +74,7 @@ class DatabaseSeeder extends Seeder
 
         // Create Comptable
         $comptable = User::create([
+            'organization_id' => $orgId,
             'name' => 'Comptable',
             'email' => 'comptable@jareindustrie.ht',
             'password' => Hash::make('comptable123'),
@@ -77,6 +84,7 @@ class DatabaseSeeder extends Seeder
 
         // Create Opérateur de saisie
         $operateur = User::create([
+            'organization_id' => $orgId,
             'name' => 'Opérateur de saisie',
             'email' => 'operateur@jareindustrie.ht',
             'password' => Hash::make('operateur123'),
@@ -87,9 +95,11 @@ class DatabaseSeeder extends Seeder
         // Create some test clients
         $clients = [
             [
+                'organization_id' => $orgId,
+                'ref_client' => 'CLI-000001',
                 'categorie_client' => 'individuel',
                 'nom_prenom' => 'Jean Pierre',
-                'email' => 'jean.pierre@email.com',
+                'email' => 'client@jareindustrie.ht',
                 'telephone' => '509-3401-2345',
                 'date_naissance' => '1985-03-15',
                 'nationalite' => 'Haïtienne',
@@ -99,6 +109,8 @@ class DatabaseSeeder extends Seeder
                 'numero_piece' => 'CI-1985-0315'
             ],
             [
+                'organization_id' => $orgId,
+                'ref_client' => 'CLI-000002',
                 'categorie_client' => 'mutuelle',
                 'nom_prenom' => 'Mutuelle des Enseignants du Primaire',
                 'email' => 'mutuelle.enseignants@email.com',
@@ -114,9 +126,21 @@ class DatabaseSeeder extends Seeder
             Client::create($clientData);
         }
 
+        // Compte portail client de test
+        User::create([
+            'organization_id' => $orgId,
+            'name' => 'Jean Pierre',
+            'email' => 'client@jareindustrie.ht',
+            'password' => Hash::make('client123456'),
+            'role' => User::ROLE_CLIENT,
+            'telephone' => '509-3401-2345',
+            'email_verified_at' => now(),
+        ]);
+
         // Create some test projets
         $projets = [
             [
+                'organization_id' => $orgId,
                 'nom' => 'Résidence Belle-Vue',
                 'localisation' => 'Delmas 75, Pétion-Ville',
                 'superficie' => 5000,
@@ -126,6 +150,7 @@ class DatabaseSeeder extends Seeder
                 'cree_par' => $admin->id
             ],
             [
+                'organization_id' => $orgId,
                 'nom' => 'Complexe Commercial Carrefour',
                 'localisation' => 'Route de Carrefour',
                 'superficie' => 3000,
@@ -180,5 +205,6 @@ class DatabaseSeeder extends Seeder
         $this->command->info('- Chef Commercial: commercial@jareindustrie.ht / mot de passe: commercial123');
         $this->command->info('- Comptable: comptable@jareindustrie.ht / mot de passe: comptable123');
         $this->command->info('- Opérateur: operateur@jareindustrie.ht / mot de passe: operateur123');
+        $this->command->info('- Client: client@jareindustrie.ht / mot de passe: client123456');
     }
 }

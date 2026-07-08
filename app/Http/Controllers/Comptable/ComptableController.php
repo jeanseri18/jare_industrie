@@ -7,8 +7,14 @@ use App\Models\Paiement;
 use App\Models\Souscription;
 use App\Models\FraisDossier;
 use App\Models\ApportInitial;
+use App\Models\Client;
+use App\Models\Mutuelle;
+use App\Models\Projet;
+use App\Services\DashboardChartService;
+use App\Services\DocumentPdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 
 class ComptableController extends Controller
@@ -59,7 +65,7 @@ class ComptableController extends Controller
             }
         }
 
-        $fraisDossier = $query->latest()->paginate(20);
+        $fraisDossier = $query->latest()->paginate(config('pagination.per_page'))->withQueryString();
 
         return view('comptable.frais-dossier', compact('fraisDossier'));
     }
@@ -110,7 +116,7 @@ class ComptableController extends Controller
             }
         }
 
-        $apportsInitiaux = $query->latest()->paginate(20);
+        $apportsInitiaux = $query->latest()->paginate(config('pagination.per_page'))->withQueryString();
 
         return view('comptable.apports-initiaux', compact('apportsInitiaux'));
     }
@@ -175,7 +181,7 @@ class ComptableController extends Controller
             }
         }
 
-        $souscriptions = $query->latest()->paginate(20);
+        $souscriptions = $query->latest()->paginate(config('pagination.per_page'))->withQueryString();
 
         // Récupérer la liste des projets pour le filtre
         $projets = \App\Models\Projet::all();
@@ -238,7 +244,7 @@ class ComptableController extends Controller
             $query->whereDate('date_paiement', '<=', $request->date_fin);
         }
 
-        $projetsSoldes = $query->latest()->paginate(20);
+        $projetsSoldes = $query->latest('date_paiement')->paginate(config('pagination.per_page'))->withQueryString();
 
         // Récupérer la liste des projets pour le filtre
         $projets = \App\Models\Projet::all();
@@ -518,7 +524,7 @@ class ComptableController extends Controller
             $query->whereDate('date_paiement', '<=', $request->date_fin);
         }
 
-        $paiements = $query->latest()->paginate(20);
+        $paiements = $query->latest('date_paiement')->paginate(config('pagination.per_page'))->withQueryString();
 
         return view('comptable.paiements-souscription', compact('souscription', 'paiements'));
     }
@@ -558,6 +564,11 @@ class ComptableController extends Controller
 
     public function dashboard()
     {
+        $totalClients = Client::count();
+        $totalProjets = Projet::count();
+        $totalMutuelles = Mutuelle::count();
+        $projetsActifs = Projet::count();
+
         // 1. Global Stats
         $totalEncaisse = Paiement::where('statut', 'payé')->sum('montant');
         $totalEncaisseShort = $this->formatFcfaShort($totalEncaisse);
@@ -606,38 +617,38 @@ class ComptableController extends Controller
             return $paye > 0;
         })->count();
         
-        $souscriptionsEnAttente = $souscriptionsTotalCount - $clientsSoldes - $paiementsEnCours;
+        $souscriptionsEnAttente = max($souscriptionsTotalCount - $clientsSoldes - $paiementsEnCours, 0);
 
         // Total Restant Global (Sum of all remaining amounts)
-        // We approximate Total Expected = Sum(Prix Logement) + Sum(Frais Dossier)
-        // This assumes Prix Logement covers Apport Initial and regular payments.
         $totalPrixLogements = Souscription::sum('prix_logement');
         $totalFraisDossier = FraisDossier::sum('montant');
         $totalAttendu = $totalPrixLogements + $totalFraisDossier;
-        $totalRestant = $totalAttendu - $totalEncaisse;
+        $totalRestant = max($totalAttendu - $totalEncaisse, 0);
 
-        // 5. Charts
-        $byProject = DB::table('paiements')
-            ->join('souscriptions', 'paiements.dossier_id', '=', 'souscriptions.id')
-            ->join('projets', 'souscriptions.programme', '=', 'projets.id')
-            ->where('paiements.statut', '=', 'payé')
-            ->select('projets.nom as projet_nom', DB::raw('SUM(paiements.montant) as total'))
-            ->groupBy('projets.nom')
-            ->get();
-    
-        $barChartLabels = $byProject->pluck('projet_nom')->toArray();
-        $barChartValues = $byProject->pluck('total')->map(function ($v) { return (float) $v; })->toArray();
+        $charts = app(DashboardChartService::class);
+        $chartDonut = array_merge(
+            ['title' => 'Répartition des souscriptions'],
+            $charts->souscriptionStatusDonut($souscriptionsEnAttente, $paiementsEnCours, $clientsSoldes)
+        );
+        $chartLine = array_merge(
+            ['title' => 'Encaissements mensuels', 'currency' => true, 'chartLabel' => 'Encaissements (FCFA)'],
+            $charts->monthlyEncaissements()
+        );
+        $chartBar = array_merge(
+            ['title' => 'Encaissements par projet', 'chartLabel' => 'Montant (FCFA)', 'currency' => true],
+            $charts->encaissementsByProject()
+        );
 
-        // Projects list for filter
-        $projets = \App\Models\Projet::all();
+        $projets = Projet::all();
     
         return view('comptable.dashboard', compact(
+            'totalClients', 'totalProjets', 'totalMutuelles', 'projetsActifs',
             'totalEncaisse', 'totalEncaisseShort', 'totalRestant',
             'fraisDossierTotalAmount', 'fraisDossierPaye', 'fraisDossierReste', 'fraisDossierCountTotal', 'fraisDossierCountSoldes',
             'apportInitialTotalAmount', 'apportInitialPaye', 'apportInitialReste', 'apportInitialCountTotal', 'apportInitialCountSoldes',
             'projetTotalAttendu', 'projetTotalPaye', 'projetTotalReste', 'projetCountTotal', 'projetCountSoldes',
             'souscriptionsEnAttente', 'paiementsEnCours', 'clientsSoldes',
-            'barChartLabels', 'barChartValues', 'projets'
+            'chartDonut', 'chartLine', 'chartBar', 'projets'
         ));
     }
 
@@ -711,7 +722,10 @@ class ComptableController extends Controller
     public function recu(Paiement $paiement)
     {
         $paiement->load(['souscription.client', 'souscription.projet', 'comptable']);
-        return view('comptable.recu', compact('paiement'));
+        $asPdf = true;
+        return app(DocumentPdfService::class)
+            ->render('comptable.recu', compact('paiement', 'asPdf'), 'a5', 'landscape')
+            ->stream("Recu_{$paiement->reference}.pdf");
     }
 
     public function editionRecus(Request $request)
@@ -736,7 +750,7 @@ class ComptableController extends Controller
             $query->whereDate('date_paiement', '<=', $request->date_fin);
         }
 
-        $paiements = $query->latest('date_paiement')->paginate(20);
+        $paiements = $query->latest('date_paiement')->paginate(config('pagination.per_page'))->withQueryString();
 
         return view('comptable.edition-recus', compact('paiements'));
     }
@@ -758,7 +772,7 @@ class ComptableController extends Controller
             });
         }
 
-        $dossiersAnnules = $query->latest()->paginate(20);
+        $dossiersAnnules = $query->latest()->paginate(config('pagination.per_page'))->withQueryString();
 
         return view('comptable.dossiers-annules', compact('dossiersAnnules'));
     }
@@ -854,7 +868,11 @@ class ComptableController extends Controller
     {
         $souscription->load(['client', 'projet', 'attributionLot', 'paiements']);
         $paiements = $souscription->paiements()->where('statut', 'payé')->orderBy('date_paiement')->get();
-        return view('documents.etat_versements', compact('souscription', 'paiements'));
+
+        return view(
+            'documents.etat_versements',
+            app(DocumentPdfService::class)->withBrand(compact('souscription', 'paiements'))
+        );
     }
 
     /**
@@ -894,7 +912,7 @@ class ComptableController extends Controller
      */
     public function clientsIndex(Request $request)
     {
-        $query = \App\Models\Client::latest();
+        $query = \App\Models\Client::with(['mutuelle', 'lastSouscription.projet'])->latest();
         
         // Filtres
         if ($request->filled('search')) {
@@ -911,8 +929,22 @@ class ComptableController extends Controller
             $query->whereDate('created_at', $request->date_creation);
         }
 
-        $clients = $query->paginate(10);
-        return view('comptable.clients.index', compact('clients'));
+        if ($request->filled('mutuelle_id')) {
+            $query->where('mutuelle_id', $request->mutuelle_id);
+        }
+
+        if ($request->filled('projet_id')) {
+            $pid = $request->projet_id;
+            $query->whereHas('souscriptions', function ($q) use ($pid) {
+                $q->where('programme', $pid);
+            });
+        }
+
+        $clients = $query->paginate(config('pagination.per_page'))->withQueryString();
+        $projets = \App\Models\Projet::orderBy('nom')->get();
+        $mutuelles = \App\Models\Mutuelle::orderBy('nom')->get();
+
+        return view('comptable.clients.index', compact('clients', 'projets', 'mutuelles'));
     }
 
     /**

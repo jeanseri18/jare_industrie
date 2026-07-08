@@ -10,6 +10,7 @@ use App\Models\Paiement;
 use App\Models\Projet;
 use App\Models\Souscription;
 use App\Models\User;
+use App\Services\DashboardChartService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 
@@ -70,13 +71,30 @@ class AdminTechniqueController extends Controller
         $monthlyStats = $this->getMonthlyStats();
         $alerts = $this->getAlerts();
 
+        $charts = app(DashboardChartService::class);
+        $roleChart = $charts->usersByRoleDonut($usersByRole);
+        $activityTrend = $charts->monthlyActivityTrend();
+
+        $chartDonut = array_merge(['title' => 'Utilisateurs par rôle'], $roleChart);
+        $chartLine = array_merge(['title' => 'Évolution mensuelle'], $activityTrend);
+        $chartBar = [
+            'title' => 'Nouveaux utilisateurs',
+            'labels' => $activityTrend['labels'],
+            'values' => $activityTrend['datasets'][0]['values'] ?? [],
+            'chartLabel' => 'Utilisateurs',
+            'currency' => false,
+        ];
+
         return view('dg.admin_technique.dashboard', compact(
             'stats',
             'recentActivities',
             'recentBackups',
             'usersByRole',
             'monthlyStats',
-            'alerts'
+            'alerts',
+            'chartDonut',
+            'chartLine',
+            'chartBar'
         ));
     }
 
@@ -119,15 +137,7 @@ class AdminTechniqueController extends Controller
     {
         $alerts = [];
 
-        $lastBackup = DatabaseBackup::completed()->latest()->first();
-        if (!$lastBackup || $lastBackup->created_at < now()->subDays(7)) {
-            $alerts[] = [
-                'type' => 'warning',
-                'message' => 'Aucune sauvegarde récente trouvée. La dernière sauvegarde date de ' .
-                    ($lastBackup ? $lastBackup->created_at->diffForHumans() : 'jamais'),
-                'icon' => 'fas fa-exclamation-triangle',
-            ];
-        }
+        // Alert "sauvegarde" supprimée (ne pas afficher de notification si aucune sauvegarde)
 
         $diskSpace = @disk_free_space(storage_path());
         $totalSpace = @disk_total_space(storage_path());

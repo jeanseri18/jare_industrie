@@ -4,9 +4,11 @@ namespace App\Http\Controllers\DG;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\CurrentOrganization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class EquipeController extends Controller
 {
@@ -17,8 +19,11 @@ class EquipeController extends Controller
     {
         $statut = $request->get('statut', 'en_attente');
 
+        $orgId = CurrentOrganization::id();
+
         $query = User::query()
-            ->where('role', '!=', 'client');
+            ->where('role', '!=', 'client')
+            ->when($orgId, fn ($q) => $q->where('organization_id', $orgId));
 
         if ($statut === 'en_attente') {
             $query->whereNull('email_verified_at')
@@ -42,7 +47,7 @@ class EquipeController extends Controller
             $query->whereDate('created_at', $request->date_inscription);
         }
 
-        $users = $query->orderBy('created_at', 'desc')->get();
+        $users = $query->orderBy('created_at', 'desc')->paginate(config('pagination.per_page'))->withQueryString();
 
         return view('dg.equipes.index', compact('users'));
     }
@@ -56,7 +61,10 @@ class EquipeController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email',
+            'email' => [
+                'required', 'email', 'max:255',
+                Rule::unique('users', 'email')->where(fn ($q) => $q->where('organization_id', $orgId)),
+            ],
             'role' => 'required|in:operateur,comptable,dg,admin_technique,chef_commercial',
             'password' => 'nullable|string|min:8',
         ]);
@@ -64,6 +72,7 @@ class EquipeController extends Controller
         $password = $validated['password'] ?? Str::random(12);
 
         User::create([
+            'organization_id' => $orgId,
             'name' => $validated['name'],
             'email' => $validated['email'],
             'role' => $validated['role'],
@@ -106,7 +115,10 @@ class EquipeController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'email' => [
+                'required', 'email', 'max:255',
+                Rule::unique('users', 'email')->ignore($user->id)->where(fn ($q) => $q->where('organization_id', $user->organization_id)),
+            ],
             'role' => 'required|in:operateur,comptable,dg,admin_technique,chef_commercial',
             'password' => 'nullable|string|min:8',
         ]);
@@ -131,7 +143,7 @@ class EquipeController extends Controller
         $activities = \App\Models\ActivityLog::with('user')
             ->where('user_id', $user->id)
             ->latest()
-            ->paginate(20);
+            ->paginate(config('pagination.per_page'))->withQueryString();
 
         return view('dg.equipes.logs', compact('user', 'activities'));
     }

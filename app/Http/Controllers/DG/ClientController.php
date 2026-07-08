@@ -8,6 +8,7 @@ use App\Models\ActivityLog;
 use App\Models\Mutuelle;
 use App\Models\Projet;
 use App\Models\User;
+use App\Services\DocumentPdfService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,7 +22,7 @@ class ClientController extends Controller
         $query = $this->buildFilteredQuery($request)
             ->with(['mutuelle', 'lastSouscription.projet']);
 
-        $clients = $query->paginate(10)->withQueryString();
+        $clients = $query->paginate(config('pagination.per_page'))->withQueryString();
 
         $projets = Projet::orderBy('nom')->get();
         $mutuelles = Mutuelle::where('est_active', true)->orderBy('nom')->get();
@@ -77,6 +78,8 @@ class ClientController extends Controller
         $client->load(['souscriptions' => function($query) {
             $query->with('projet')->latest();
         }, 'mutuelle']);
+
+        $clientUser = $this->findUserForClient($client);
         
         foreach ($client->souscriptions as $souscription) {
             if ($souscription->programme && is_numeric($souscription->programme) && !$souscription->projet) {
@@ -89,7 +92,7 @@ class ClientController extends Controller
             }
         }
         
-        return view('dg.clients.show', compact('client'));
+        return view('dg.clients.show', compact('client', 'clientUser'));
     }
 
     public function edit(Client $client)
@@ -161,12 +164,12 @@ class ClientController extends Controller
             ->with(['mutuelle', 'lastSouscription.projet'])
             ->get();
 
-        $pdf = Pdf::loadView('documents.clients_export', [
-            'clients' => $clients,
-            'filters' => $request->only(['search', 'date_creation', 'projet_id', 'mutuelle_id'])
-        ])->setPaper('a4', 'landscape');
-
-        return $pdf->download('clients.pdf');
+        return app(DocumentPdfService::class)
+            ->render('documents.clients_export', [
+                'clients' => $clients,
+                'filters' => $request->only(['search', 'date_creation', 'projet_id', 'mutuelle_id']),
+            ], 'a4', 'landscape')
+            ->stream('clients.pdf');
     }
 
     public function exportExcel(Request $request)
@@ -213,6 +216,61 @@ class ClientController extends Controller
         $response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
 
         return $response;
+    }
+
+    public function createAccount(Request $request, Client $client)
+    {
+        if ($this->findUserForClient($client)) {
+            return redirect()->route('dg.clients.show', $client)
+                ->with('error', 'Ce client possède déjà un compte portail.');
+        }
+
+        $loginEmail = $this->resolveClientLoginEmail($client);
+        if (! $loginEmail) {
+            return redirect()->route('dg.clients.show', $client)
+                ->with('error', 'Ajoutez un email au client ou une référence client avant de créer un compte.');
+        }
+
+        if (User::where('email', $loginEmail)->exists()) {
+            return redirect()->route('dg.clients.show', $client)
+                ->with('error', "L'adresse {$loginEmail} est déjà utilisée par un autre compte.");
+        }
+
+        $request->validate([
+            'password' => 'nullable|string|min:8|confirmed',
+        ]);
+
+        $password = $request->filled('password')
+            ? $request->password
+            : substr(str_shuffle('ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'), 0, 10);
+
+        $user = User::create([
+            'organization_id' => $client->organization_id,
+            'name' => $client->nom_prenom,
+            'email' => $loginEmail,
+            'password' => Hash::make($password),
+            'role' => User::ROLE_CLIENT,
+            'telephone' => $client->telephone,
+            'email_verified_at' => now(),
+        ]);
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'create',
+            'description' => "Création du compte portail client: {$user->name}",
+            'model_type' => User::class,
+            'model_id' => $user->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        return redirect()->route('dg.clients.show', $client)
+            ->with('success', 'Compte client créé avec succès.')
+            ->with('client_credentials', [
+                'email' => $loginEmail,
+                'password' => $password,
+                'nom_client' => $client->nom_prenom,
+            ]);
     }
 
     public function editPassword(Client $client)
@@ -290,16 +348,25 @@ class ClientController extends Controller
 
     private function findUserForClient(Client $client): ?User
     {
-        $email = $client->email;
-        if (!empty($email)) {
+        $email = $this->resolveClientLoginEmail($client);
+        if ($email) {
             $u = User::where('email', $email)->first();
-            if ($u && $u->isClient()) return $u;
+            if ($u && $u->isClient()) {
+                return $u;
+            }
         }
 
-        if (!empty($client->ref_client)) {
-            $fallbackEmail = strtolower($client->ref_client) . '@jarelinstrudie.local';
-            $u = User::where('email', $fallbackEmail)->first();
-            if ($u && $u->isClient()) return $u;
+        return null;
+    }
+
+    private function resolveClientLoginEmail(Client $client): ?string
+    {
+        if (! empty($client->email)) {
+            return $client->email;
+        }
+
+        if (! empty($client->ref_client)) {
+            return strtolower($client->ref_client).'@jarelinstrudie.local';
         }
 
         return null;

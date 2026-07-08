@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\Client\ClientController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
@@ -12,18 +13,35 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::post('/contact', [\App\Http\Controllers\Public\ContactController::class, 'store'])->name('contact.store');
+
+Route::middleware('signed')->prefix('p')->name('public.')->group(function () {
+    Route::get('/paiements/{paiement}/recu', [\App\Http\Controllers\Public\DocumentController::class, 'recu'])->name('paiements.recu');
+    Route::get('/paiements/{paiement}/preuve', [\App\Http\Controllers\Public\DocumentController::class, 'preuvePaiement'])->name('paiements.preuve');
+    Route::get('/souscriptions/{souscription}/fiche', [\App\Http\Controllers\Public\DocumentController::class, 'ficheSouscription'])->name('souscriptions.fiche');
+    Route::get('/souscriptions/{souscription}/contrat-reservation', [\App\Http\Controllers\Public\DocumentController::class, 'contratReservation'])->name('souscriptions.contrat-reservation');
+    Route::get('/souscriptions/{souscription}/lettre-definitive', [\App\Http\Controllers\Public\DocumentController::class, 'lettreDefinitive'])->name('souscriptions.lettre-definitive');
+    Route::get('/souscriptions/{souscription}/etat-versements', [\App\Http\Controllers\Public\DocumentController::class, 'etatVersements'])->name('souscriptions.etat-versements');
+    Route::get('/souscriptions/{souscription}/attestation-reservation', [\App\Http\Controllers\Public\DocumentController::class, 'attestationReservation'])->name('souscriptions.attestation-reservation');
+});
+
    Route::middleware('guest')->group(function () {
-        Route::get('/register', [AuthController::class, 'showRegistrationForm'])->name('register');
-        Route::post('/register', [AuthController::class, 'register']);
+        Route::get('/register', [OnboardingController::class, 'showAccount'])->name('register');
+        Route::post('/register', [OnboardingController::class, 'storeAccount'])->name('register.account');
+        Route::get('/register/entreprise', [OnboardingController::class, 'showCompany'])->name('register.entreprise');
+        Route::post('/register/entreprise', [OnboardingController::class, 'storeCompany'])->name('register.entreprise.store');
+        Route::get('/register/identite', [OnboardingController::class, 'showBranding'])->name('register.identite');
+        Route::post('/register/identite', [OnboardingController::class, 'complete'])->name('register.complete');
+
+        Route::get('/register/equipe', [AuthController::class, 'showRegistrationForm'])->name('register.equipe');
+        Route::post('/register/equipe', [AuthController::class, 'register'])->name('register.equipe.store');
+
         Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
         Route::post('/login', [AuthController::class, 'login']);
     });
 // Routes d'authentification client
-Route::prefix('client')->name('client.')->group(function () {
- 
-
-    Route::middleware('auth')->group(function () {
-        Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::prefix('client')->name('client.')->middleware(['auth', 'org'])->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
         
         // Dashboard client
         Route::get('/dashboard', [ClientController::class, 'dashboard'])->name('dashboard');
@@ -44,7 +62,6 @@ Route::prefix('client')->name('client.')->group(function () {
         Route::get('/profile', [ClientController::class, 'profile'])->name('profile');
         Route::put('/profile', [ClientController::class, 'updateProfile'])->name('profile.update');
         Route::put('/password', [ClientController::class, 'updatePassword'])->name('password.update');
-    });
 });
 
 // Routes partagées pour tout le staff
@@ -54,7 +71,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // Routes pour DG
-Route::prefix('dg')->name('dg.')->middleware('auth')->group(function () {
+Route::prefix('dg')->name('dg.')->middleware(['auth', 'org', 'role:dg,admin_technique'])->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\DG\DashboardController::class, 'index'])->name('dashboard');
     
     // Inclure les routes DG
@@ -62,13 +79,13 @@ Route::prefix('dg')->name('dg.')->middleware('auth')->group(function () {
 });
 
 // Routes pour Comptable
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'org', 'role:comptable'])->group(function () {
     // Inclure les routes Comptable
     require __DIR__.'/comptable.php';
 });
 
 // Routes pour Chef Commercial
-Route::prefix('chef_commercial')->name('chef_commercial.')->middleware('auth')->group(function () {
+Route::prefix('chef_commercial')->name('chef_commercial.')->middleware(['auth', 'org', 'role:chef_commercial'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\ChefCommercial\ChefCommercialController::class, 'dashboard'])
         ->name('dashboard');
 
@@ -99,7 +116,7 @@ Route::prefix('chef_commercial')->name('chef_commercial.')->middleware('auth')->
 });
 
 // Routes pour Admin Technique
-Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'org', 'role:admin_technique'])->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     
     // Gestion des utilisateurs
@@ -122,7 +139,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 });
 
 // Routes pour Opérateur de saisie
-Route::prefix('operateur')->name('operateur.')->middleware(['auth', 'role:operateur'])->group(function () {
+Route::prefix('operateur')->name('operateur.')->middleware(['auth', 'org', 'role:operateur'])->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\Operateur\OperateurController::class, 'dashboard'])->name('dashboard');
     Route::get('/souscriptions/create', [App\Http\Controllers\Operateur\OperateurController::class, 'create'])->name('souscriptions.create');
     Route::post('/souscriptions', [App\Http\Controllers\Operateur\OperateurController::class, 'store'])->name('souscriptions.store');
@@ -134,3 +151,7 @@ Route::prefix('operateur')->name('operateur.')->middleware(['auth', 'role:operat
 
 // Route de déconnexion générale
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+
+Route::prefix('platform')->name('platform.')->group(function () {
+    require __DIR__.'/platform.php';
+});

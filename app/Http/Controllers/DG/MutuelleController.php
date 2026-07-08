@@ -15,7 +15,7 @@ class MutuelleController extends Controller
     {
         $mutuelles = Mutuelle::with('projet')
             ->latest()
-            ->paginate(10);
+            ->paginate(config('pagination.per_page'))->withQueryString();
             
         return view('dg.mutuelles.index', compact('mutuelles'));
     }

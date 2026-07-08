@@ -56,7 +56,7 @@
             </div>
 
             <div class="mt-3">
-                {{ $activities->links() }}
+                <x-pagination :paginator="$activities" />
             </div>
         @else
             <div class="alert alert-info">Aucune action enregistrée pour cet utilisateur.</div>

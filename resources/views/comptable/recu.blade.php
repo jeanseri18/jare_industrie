@@ -9,148 +9,83 @@
             size: A5 landscape;
             margin: 0;
         }
-        body {
-            font-family: 'Arial', sans-serif;
+        html, body {
+            font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #fff;
-            color: #000;
-            font-size: 14px;
+            background: #fff;
+            color: #111;
+            font-size: 12px;
         }
-        .container {
-            width: 100%;
-            height: 100vh; /* Full height for A5 landscape if printed as such */
-            max-width: 21cm; /* Approx A4 width if printed on A4 */
-            margin: 0 auto;
+        .page {
             position: relative;
-            background-color: #fff;
-            padding: 20px 40px;
+            padding: 10px 16px 62px; /* réserve de place pour le footer fixe */
             box-sizing: border-box;
         }
-        
-        /* Header */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 3px solid #E30613;
-        }
-        .logo-section {
-            width: 150px;
-        }
-        .logo-img {
-            max-width: 100%;
-            height: auto;
-        }
-        .title-section {
+        .watermark {
+            position: fixed;
+            left: 50%;
+            top: 52%;
+            transform: translate(-50%, -50%);
+            width: 65%;
+            opacity: 0.07;
+            z-index: 0;
             text-align: center;
-            flex-grow: 1;
-            padding: 0 20px;
         }
-        .company-name {
-            font-size: 24px;
-            font-weight: 900;
-            color: #E30613; /* Red */
-            text-transform: uppercase;
-            line-height: 1.2;
-            margin-bottom: 5px;
-        }
-        .company-subtitle {
-            font-size: 18px;
-            font-weight: 700;
-            color: #004A80; /* Blue */
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .qr-section {
-            width: 100px;
-            text-align: right;
-        }
+        .watermark img { width: 100%; height: auto; }
+        .content { position: relative; z-index: 1; }
         
-        /* Info Bar */
-        .info-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 25px;
-            font-size: 16px;
-            font-weight: bold;
-        }
-        .recu-num {
-            font-size: 22px;
-            font-weight: 800;
-        }
-        .bpf {
-            font-size: 18px;
-        }
+        .header-table { width: 100%; border-collapse: collapse; }
+        .header-table td { vertical-align: middle; }
+        .logo-cell { width: 22%; }
+        .title-cell { width: 56%; text-align: center; }
+        .qr-cell { width: 22%; text-align: right; }
+        .company-name { font-size: 26px; font-weight: 900; color: #ff7200; text-transform: uppercase; margin: 0; }
+        .company-subtitle { font-size: 18px; font-weight: 900; color: #004A80; text-transform: uppercase; letter-spacing: 2px; margin: 2px 0 0; }
+        .red-line { height: 3px; background: #ff7200; margin: 6px 0 12px; }
         
-        /* Form Rows */
-        .form-row {
-            display: flex;
-            align-items: baseline;
-            margin-bottom: 15px;
-            font-size: 16px;
-        }
-        .label {
-            font-weight: 800;
-            margin-right: 10px;
-            white-space: nowrap;
-        }
-        .value {
-            flex-grow: 1;
-            border-bottom: 1px dotted #999;
-            padding-left: 10px;
-            font-weight: 600;
-            color: #333;
-        }
-        .multi-col-row {
-            display: flex;
-            justify-content: space-between;
-        }
-        .col-item {
-            display: flex;
-            align-items: baseline;
-        }
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+        .info-table td { font-weight: 900; font-size: 18px; vertical-align: baseline; }
+        .info-left { width: 34%; }
+        .info-center { width: 33%; text-align: center; font-size: 14px; font-weight: 900; }
+        .info-right { width: 33%; text-align: right; font-size: 14px; font-weight: 900; }
         
-        /* Signature */
-        .signature-section {
-            margin-top: 40px;
-            text-align: right;
-            padding-right: 20px;
-        }
-        .signature-text {
-            display: inline-block;
-            text-decoration: underline;
-            font-weight: normal;
-            font-size: 16px;
-        }
+        .form-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .form-table td { padding: 10px 0; vertical-align: baseline; }
+        .lbl { width: 190px; font-weight: 900; }
+        .colon { width: 18px; font-weight: 900; }
+        .dots { border-bottom: 2px dotted #6b7280; height: 18px; }
+        .dots span { display: inline-block; padding-left: 10px; font-weight: 700; color: #111; }
+        .triple { width: 100%; border-collapse: collapse; }
+        .triple td { padding: 0; }
+        .triple .item-lbl { width: 110px; font-weight: 900; }
+        .triple .item-colon { width: 14px; font-weight: 900; }
+        .triple .item-dots { border-bottom: 2px dotted #6b7280; height: 18px; }
+        .triple .item-dots span { padding-left: 10px; font-weight: 700; }
         
-        /* Footer */
+        .signature-wrap { margin-top: 18px; }
+        .signature-text { text-align: right; font-size: 14px; text-decoration: underline; padding-right: 8px; }
+        
         .footer {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
             background-color: #2c3e50; /* Dark Blue from image */
             color: #fff;
             text-align: center;
-            padding: 10px 20px;
-            font-size: 10px;
-            line-height: 1.4;
+            padding: 7px 14px;
+            font-size: 8.5px;
+            line-height: 1.25;
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-top: 3px solid #ff7200;
+            height: 44px;
+            box-sizing: border-box;
         }
-        
-        /* Watermark */
-        .watermark-bg {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 60%;
-            opacity: 0.05;
-            z-index: 0;
-            pointer-events: none;
+
+        @media (max-width: 768px) {
+            .footer {
+                display: none;
+            }
         }
         
         .print-btn {
@@ -166,132 +101,153 @@
         }
         
         @media print {
-            .print-btn { display: none; }
-            .container { 
-                border: none; 
-                width: 100%; 
-                height: 100%;
-                margin: 0; 
-                padding: 20px 40px;
+            .print-btn { display: none !important; }
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
             }
-            body { background: white; }
             @page { margin: 0; }
         }
     </style>
+    @include('documents.partials._brand_styles')
 </head>
 <body>
-    <button onclick="window.print()" class="print-btn">Imprimer</button>
+    @include('documents.partials._watermark')
+    @if(empty($asPdf))
+        <button onclick="window.print()" class="print-btn">Imprimer</button>
+        @if(!empty($paiement->preuve_paiement))
+            @php
+                $preuveUrl = \Illuminate\Support\Facades\URL::signedRoute('public.paiements.preuve', ['paiement' => $paiement->id]);
+            @endphp
+            <a class="print-btn" href="{{ $preuveUrl }}" target="_blank" rel="noopener" style="right: 140px; background:#6c757d; text-decoration:none; display:inline-block;">
+                Voir la preuve
+            </a>
+        @endif
+    @endif
 
-    <div class="container">
-        <!-- Background Logo/Watermark if needed, represented by text or image -->
-        <!-- <img src="/path/to/logo.png" class="watermark-bg" /> -->
-        
-        <div class="header">
-            <div class="logo-section">
-                <!-- Placeholder for Logo -->
-                <img src="{{ asset('LOGO.png') }}" alt="JARE INDUSTRIES" style="max-height: 80px; max-width: 100%;">
-                @if(!file_exists(public_path('LOGO.png')))
-                <div style="font-weight:bold; font-size:20px; line-height:1; color:#E30613;">
-                    <span style="font-size:30px;">🏠</span><br>JARE<br><span style="font-size:12px; color:#333;">INDUSTRIES</span>
-                </div>
+    @php
+        $nomClient = strtoupper(trim(($paiement->souscription->client->nom ?? '') . ' ' . ($paiement->souscription->client->prenom ?? '')));
+        $motif = '';
+        if ($paiement->type == 'FRAIS_DOSSIER') $motif = 'Frais de Dossier';
+        elseif ($paiement->type == 'APPORT') $motif = 'Apport Initial';
+        elseif ($paiement->type == 'PROJET') $motif = 'Versement Projet';
+        elseif ($paiement->type == 'REMBOURSEMENT') $motif = 'Remboursement';
+        else $motif = ucfirst(str_replace('_', ' ', (string) $paiement->type));
+
+        $prixLogement = $paiement->souscription->prix_logement ?? 0;
+        $fraisDossier = \App\Models\FraisDossier::where('id_souscription', $paiement->souscription->id)->sum('montant');
+        $totalAttendu = $prixLogement + $fraisDossier;
+        $totalPaye = $paiement->souscription->paiements()->where('statut', 'payé')->sum('montant');
+        $reste = max($totalAttendu - $totalPaye, 0);
+
+        $dateTxt = $paiement->date_paiement ? $paiement->date_paiement->format('d/m/Y') : now()->format('d/m/Y');
+    @endphp
+
+    @php
+        $logoSrc = $brand?->logoDataUri() ?? $brand?->logoAbsolutePath();
+        $legalName = $brand?->displayName() ?? config('app.name');
+        $tagline = $brand?->tagline ?? 'PROMOTEUR IMMOBILIER AGRÉÉ';
+        $directorName = $brand?->director_name ?? 'Directeur Général';
+        $signatureSrc = $brand?->signatureDataUri() ?? $brand?->signatureAbsolutePath();
+    @endphp
+
+    <div class="page">
+        <div class="content">
+            <table class="header-table">
+                <tr>
+                    <td class="logo-cell">
+                        @if($logoSrc)
+                            <img src="{{ $logoSrc }}" alt="" style="max-height: 70px; max-width: 140px;">
+                        @endif
+                    </td>
+                    <td class="title-cell">
+                        <div class="company-name">{{ $legalName }}</div>
+                        <div class="company-subtitle">{{ $tagline }}</div>
+                    </td>
+                    <td class="qr-cell">
+                        @php
+                            $qrUrl = \Illuminate\Support\Facades\URL::signedRoute('public.paiements.recu', ['paiement' => $paiement->id]);
+                        @endphp
+                        <img src="data:image/svg+xml;base64,{{ base64_encode(\SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(86)->margin(0)->generate($qrUrl)) }}" style="width:78px;height:78px;">
+                    </td>
+                </tr>
+            </table>
+
+            <div class="red-line"></div>
+
+            <table class="info-table">
+                <tr>
+                    <td class="info-left">REÇU N°</td>
+                    <td class="info-center">BPF : {{ number_format($paiement->montant, 0, ',', ' ') }} FCFA</td>
+                    <td class="info-right">Abidjan, le {{ $dateTxt }}</td>
+                </tr>
+            </table>
+
+            <table class="form-table">
+                <tr>
+                    <td class="lbl">M, MME, MLLE</td>
+                    <td class="colon">:</td>
+                    <td class="dots"><span>{{ $nomClient ?: '' }}</span></td>
+                </tr>
+                <tr>
+                    <td class="lbl">Type de logement</td>
+                    <td class="colon">:</td>
+                    <td class="dots"><span>{{ $paiement->souscription->type_logement ?? '' }}</span></td>
+                </tr>
+                <tr>
+                    <td colspan="3">
+                        <table class="triple">
+                            <tr>
+                                <td class="item-lbl">N° Villa</td>
+                                <td class="item-colon">:</td>
+                                <td class="item-dots" style="width: 33%;"><span>{{ $paiement->souscription->attributionLot->numero_villa ?? '' }}</span></td>
+                                <td style="width: 22px;"></td>
+                                <td class="item-lbl">N° Lot</td>
+                                <td class="item-colon">:</td>
+                                <td class="item-dots" style="width: 33%;"><span>{{ $paiement->souscription->attributionLot->lot ?? '' }}</span></td>
+                                <td style="width: 22px;"></td>
+                                <td class="item-lbl">N° ILot</td>
+                                <td class="item-colon">:</td>
+                                <td class="item-dots" style="width: 33%;"><span>{{ $paiement->souscription->attributionLot->ilot ?? '' }}</span></td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="lbl">Montant en lettre</td>
+                    <td class="colon">:</td>
+                    <td class="dots">
+                        <span>
+                            @php
+                                echo ucfirst(numberToWords($paiement->montant)) . " Francs CFA";
+                            @endphp
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="lbl">Pour le Motif</td>
+                    <td class="colon">:</td>
+                    <td class="dots"><span>{{ $motif }}</span></td>
+                </tr>
+                <tr>
+                    <td class="lbl">Reste à payer</td>
+                    <td class="colon">:</td>
+                    <td class="dots"><span>{{ number_format($reste, 0, ',', ' ') }} FCFA</span></td>
+                </tr>
+            </table>
+
+            <div class="signature-wrap">
+                @if($signatureSrc)
+                    <div style="text-align: right; margin-bottom: 6px;">
+                        <img src="{{ $signatureSrc }}" alt="" style="max-height: 60px;">
+                    </div>
                 @endif
+                <div class="signature-text">Signature {{ $legalName }} — {{ $directorName }}</div>
             </div>
-            <div class="title-section">
-                <div class="company-name">JARE INDUSTRIES CÔTE D'IVOIRE</div>
-                <div class="company-subtitle">PROMOTEUR IMMOBILIER AGRÉÉ</div>
-            </div>
-            <div class="qr-section">
-                <!-- QR Code placeholder -->
-                <img src="data:image/svg+xml;base64, {{ base64_encode(\SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(80)->generate($paiement->reference)) }}" >
-            </div>
-        </div>
-
-        <div class="info-bar">
-            <div class="recu-num">REÇU N° {{ $paiement->reference }}</div>
-            <div class="bpf">BPF : {{ number_format($paiement->montant, 0, ',', ' ') }} FCFA</div>
-            <div>Abidjan, le {{ $paiement->date_paiement ? $paiement->date_paiement->format('d/m/Y') : now()->format('d/m/Y') }}</div>
-        </div>
-
-        <div class="form-row">
-            <span class="label">M, MME, MLLE</span>
-            <span class="label">:</span>
-            <span class="value">{{ strtoupper(($paiement->souscription->client->nom ?? '') . ' ' . ($paiement->souscription->client->prenom ?? '')) }}</span>
-        </div>
-
-        <div class="form-row">
-            <span class="label">Type de logement</span>
-            <span class="label">:</span>
-            <span class="value">{{ $paiement->souscription->type_logement ?? 'Non spécifié' }}</span>
-        </div>
-
-        <div class="form-row multi-col-row">
-            <div class="col-item" style="flex: 1;">
-                <span class="label">N° Villa</span>
-                <span class="label">:</span>
-                <span class="value">{{ $paiement->souscription->attributionLot->numero_villa ?? '.....' }}</span>
-            </div>
-            <div class="col-item" style="flex: 1; margin-left: 20px;">
-                <span class="label">N° Lot</span>
-                <span class="value">{{ $paiement->souscription->attributionLot->lot ?? '.....' }}</span>
-            </div>
-            <div class="col-item" style="flex: 1; margin-left: 20px;">
-                <span class="label">N° ILot</span>
-                <span class="value">{{ $paiement->souscription->attributionLot->ilot ?? '.....' }}</span>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <span class="label">Montant en lettre</span>
-            <span class="label">:</span>
-            <span class="value">
-                @php
-                    echo ucfirst(numberToWords($paiement->montant)) . " Francs CFA";
-                @endphp
-            </span>
-        </div>
-
-        <div class="form-row">
-            <span class="label">Pour le Motif</span>
-            <span class="label">:</span>
-            <span class="value">
-                @if($paiement->type == 'FRAIS_DOSSIER') Frais de Dossier
-                @elseif($paiement->type == 'APPORT') Apport Initial
-                @elseif($paiement->type == 'PROJET') Versement Projet
-                @elseif($paiement->type == 'REMBOURSEMENT') Remboursement
-                @else {{ ucfirst(str_replace('_', ' ', $paiement->type)) }}
-                @endif
-            </span>
-        </div>
-
-        <div class="form-row">
-            <span class="label">Reste à payer</span>
-            <span class="label">:</span>
-            <span class="value">
-                @php
-                    $prixLogement = $paiement->souscription->prix_logement ?? 0;
-                    $fraisDossier = \App\Models\FraisDossier::where('id_souscription', $paiement->souscription->id)->sum('montant');
-                    $totalAttendu = $prixLogement + $fraisDossier;
-                    
-                    // Calcul du total payé
-                    $totalPaye = $paiement->souscription->paiements()
-                        ->where('statut', 'payé')
-                        ->sum('montant');
-                        
-                    $reste = max($totalAttendu - $totalPaye, 0);
-                @endphp
-                {{ number_format($reste, 0, ',', ' ') }} FCFA
-            </span>
-        </div>
-
-        <div class="signature-section">
-            <div class="signature-text">Signature Jare Industries</div>
-        </div>
-
-        <div class="footer">
-            Siège Social : Abidjan Cocody - 2 Plateaux Macaci non loin de la Pharmacie ORCHID - Cité Sicogi Villa 280 Lot 53 - ilot 19<br>
-            28 B.P .70 ABIDJAN 28 - Tel : +225 21 20 80 54 20 / 07 03 94 03 14 - Whatsapp : +225 07 03 94 03 14 / 07 12 42 42 42<br>
-            RCCM : CI-ABJ-03-2023-M-11022 - CC N° : 1517590M - E-mail- : emmanuela.kore@jare-industries.com
         </div>
     </div>
+
+    @include('documents.partials._pdf_footer')
 </body>
 </html>

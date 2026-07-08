@@ -8,69 +8,96 @@
     foreach ($projets as $projet) {
         $biensImmobiliers[$projet->id] = \App\Models\BienImmobilier::where('idprojet', $projet->id)->get();
     }
+    $c = $souscription->client;
+    $dashboardUrl = route('chef_commercial.souscriptions.corrigees');
 @endphp
 
 <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: linear-gradient(135deg, #003d82 0%, #0056b3 100%); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; min-height: 100vh; padding: 20px; }
-    .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
-    .header { background: white; padding: 30px 20px 20px; text-align: center; border-bottom: 1px solid #e0e0e0; }
-    .header h2 { font-size: 20px; color: #2c3e50; margin-bottom: 5px; }
-    .header p { font-size: 14px; color: #7f8c8d; }
-    .badge-info { display:inline-block; background:#eef6ff; color:#1f6feb; border:1px solid #cfe2ff; border-radius:6px; padding:8px 12px; font-size:13px; margin-top:10px; }
-    .progress-bar { background: #ecf0f1; height: 4px; position: relative; }
-    .progress-fill { background: #2c5f8d; height: 100%; transition: width 0.3s ease; }
-    .step-indicator { text-align: right; padding: 15px 30px; font-size: 14px; color: #7f8c8d; font-weight: 600; }
-    .step { display: none; padding: 30px; }
-    .step.active { display: block; animation: fadeIn 0.3s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .step h3 { font-size: 18px; color: #2c3e50; margin-bottom: 25px; }
-    .category-selection { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
-    .category-card { border: 2px solid #e0e0e0; border-radius: 8px; padding: 20px 10px; text-align: center; cursor: pointer; transition: all 0.3s ease; background: white; }
-    .category-card:hover { border-color: #2c5f8d; background: #f8f9fa; }
-    .category-card.selected { border-color: #2c5f8d; background: #e8f4f8; }
-    .category-icon { width: 50px; height: 50px; margin: 0 auto 10px; background: #ecf0f1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; }
-    .category-card.selected .category-icon { background: #2c5f8d; color: white; }
-    .category-label { font-size: 13px; color: #2c3e50; font-weight: 500; }
-    .form-group { margin-bottom: 20px; }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-    label { display: block; font-size: 14px; color: #555; margin-bottom: 8px; font-weight: 500; }
-    input, select { width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; transition: border-color 0.3s ease; background: white; }
-    input:focus, select:focus { outline: none; border-color: #2c5f8d; }
-    .file-upload-area { border: 2px dashed #ddd; border-radius: 6px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.3s ease; background: #fafafa; }
-    .file-upload-area:hover { border-color: #2c5f8d; background: #f0f8ff; }
-    .file-upload-icon { font-size: 40px; color: #95a5a6; margin-bottom: 10px; }
-    .file-upload-text { color: #7f8c8d; font-size: 13px; }
-    .checkbox-group { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px; }
-    .checkbox-item { display: flex; align-items: center; gap: 8px; }
-    .housing-options, .payment-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
-    .option-card { border: 2px solid #e0e0e0; border-radius: 6px; padding: 15px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 10px; }
-    .option-card:hover { border-color: #2c5f8d; background: #f8f9fa; }
-    .option-card.selected { border-color: #2c5f8d; background: #e8f4f8; }
-    .option-checkbox { width: 20px; height: 20px; border: 2px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .option-card.selected .option-checkbox { background: #2c5f8d; border-color: #2c5f8d; color: white; }
-    .option-card.selected .option-checkbox::before { content: '✓'; font-size: 14px; }
-    .summary-box { background: #f8f9fa; border-left: 4px solid #2c5f8d; padding: 20px; border-radius: 6px; margin: 25px 0; }
-    .summary-box h4 { color: #2c3e50; margin-bottom: 15px; font-size: 16px; }
-    .summary-line { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: #555; }
-    .warning-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 6px; margin: 20px 0; font-size: 13px; color: #856404; }
-    .buttons { display: flex; justify-content: space-between; gap: 15px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; }
-    button { padding: 14px 30px; border: none; border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; flex: 1; }
-    .btn-secondary { background: #ecf0f1; color: #555; }
-    .btn-secondary:hover { background: #d5dbdb; }
-    .btn-primary { background: #2c5f8d; color: white; }
-    .btn-primary:hover { background: #234a6e; }
-    .success-screen { display: none; text-align: center; padding: 60px 30px; }
-    .success-screen.active { display: block; }
-    .recap-box { background: #f8f9fa; border-radius: 6px; padding: 20px; text-align: left; margin: 30px 0; }
-    .recap-item { margin-bottom: 8px; font-size: 14px; color: #555; }
-    .recap-item strong { color: #2c3e50; }
-    @media (max-width: 600px) { .category-selection { grid-template-columns: 1fr; } .form-row { grid-template-columns: 1fr; } .housing-options, .payment-options { grid-template-columns: 1fr; } }
-</style>
+    .subscription-edit,
+    .subscription-edit *,
+    .subscription-edit *::before,
+    .subscription-edit *::after {
+        box-sizing: border-box;
+    }
 
-<div class="container">
+    .subscription-edit {
+        background: #fff;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        --wizard-radius: var(--ui-radius, 0.75rem);
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100%;
+        width: 100%;
+    }
+
+    .subscription-edit .header { background: white; padding: 30px 20px 20px; text-align: center; border-bottom: 1px solid #e0e0e0; }
+    .subscription-edit .header h2 { font-size: 20px; color: #2c3e50; margin-bottom: 5px; }
+    .subscription-edit .header p { font-size: 14px; color: #7f8c8d; }
+    .subscription-edit .badge-info { display:inline-block; background:#eef6ff; color:#1f6feb; border:1px solid #cfe2ff; border-radius:var(--wizard-radius); padding:8px 12px; font-size:13px; margin-top:10px; }
+    .subscription-edit .progress-bar { background: #ecf0f1; height: 4px; position: relative; }
+    .subscription-edit .progress-fill { background: #ff7200; height: 100%; transition: width 0.3s ease; }
+    .subscription-edit .step-indicator { text-align: right; padding: 15px 30px; font-size: 14px; color: #7f8c8d; font-weight: 600; }
+    .subscription-edit .step { display: none; padding: 30px; }
+    .subscription-edit .step.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .subscription-edit .step h3 { font-size: 18px; color: #2c3e50; margin-bottom: 25px; }
+    .subscription-edit .category-selection { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
+    .subscription-edit .category-card { border: 2px solid #e0e0e0; border-radius: var(--wizard-radius); padding: 20px 10px; text-align: center; cursor: pointer; transition: all 0.3s ease; background: white; }
+    .subscription-edit .category-card:hover { border-color: #ff7200; background: #f8f9fa; }
+    .subscription-edit .category-card.selected { border-color: #ff7200; background: #f9fafb; }
+    .subscription-edit .category-icon { width: 50px; height: 50px; margin: 0 auto 10px; background: #ecf0f1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #64748b; }
+    .subscription-edit .category-card.selected .category-icon { background: #ff7200; color: white; }
+    .subscription-edit .category-label { font-size: 13px; color: #2c3e50; font-weight: 500; }
+    .subscription-edit .form-group { margin-bottom: 20px; }
+    .subscription-edit .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .subscription-edit label { display: block; font-size: 14px; color: #555; margin-bottom: 8px; font-weight: 500; }
+    .subscription-edit input:not([type="radio"]):not([type="checkbox"]):not([type="hidden"]):not([type="file"]),
+    .subscription-edit select { width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: var(--wizard-radius); font-size: 14px; transition: border-color 0.3s ease; background: white; }
+    .subscription-edit input:focus:not([type="radio"]):not([type="checkbox"]):not([type="hidden"]),
+    .subscription-edit select:focus { outline: none; border-color: #ff7200; }
+    .subscription-edit .checkbox-item input[type="radio"],
+    .subscription-edit .checkbox-item input[type="checkbox"] { width: 18px; height: 18px; min-width: 18px; padding: 0; margin: 0; flex-shrink: 0; cursor: pointer; accent-color: #ff7200; }
+    .subscription-edit .file-upload-area { border: 2px dashed #ddd; border-radius: var(--wizard-radius); padding: 30px; text-align: center; cursor: pointer; transition: all 0.3s ease; background: #fafafa; }
+    .subscription-edit .file-upload-area:hover { border-color: #ff7200; background: #f0f8ff; }
+    .subscription-edit .file-upload-icon { font-size: 40px; color: #95a5a6; margin-bottom: 10px; }
+    .subscription-edit .file-upload-text { color: #7f8c8d; font-size: 13px; }
+    .subscription-edit .checkbox-group { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px; }
+    .subscription-edit .checkbox-item { display: flex; align-items: center; gap: 8px; }
+    .subscription-edit .housing-options,
+    .subscription-edit .payment-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+    .subscription-edit .option-card { border: 2px solid #e0e0e0; border-radius: var(--wizard-radius); padding: 15px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 10px; }
+    .subscription-edit .option-card:hover { border-color: #ff7200; background: #f8f9fa; }
+    .subscription-edit .option-card.selected { border-color: #ff7200; background: #f9fafb; }
+    .subscription-edit .option-checkbox { width: 20px; height: 20px; border: 2px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .subscription-edit .option-card.selected .option-checkbox { background: #ff7200; border-color: #ff7200; color: white; }
+    .subscription-edit .option-card.selected .option-checkbox::before { content: ''; width: 14px; height: 14px; background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white' stroke-width='3'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M4.5 12.75l6 6 9-13.5'/%3E%3C/svg%3E"); }
+    .subscription-edit .summary-box { background: #f8f9fa; border-left: 4px solid #ff7200; padding: 20px; border-radius: var(--wizard-radius); margin: 25px 0; }
+    .subscription-edit .summary-box h4 { color: #2c3e50; margin-bottom: 15px; font-size: 16px; }
+    .subscription-edit .summary-line { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: #555; }
+    .subscription-edit .warning-box { background: #ffedd5; border-left: 4px solid #ff7200; padding: 15px; border-radius: var(--wizard-radius); margin: 20px 0; font-size: 13px; color: #c2410c; }
+    .subscription-edit .buttons { display: flex; justify-content: space-between; gap: 15px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; }
+    .subscription-edit button { padding: 14px 30px; border: none; border-radius: var(--wizard-radius); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; flex: 1; }
+    .subscription-edit .btn-secondary { background: #ecf0f1; color: #555; }
+    .subscription-edit .btn-secondary:hover { background: #d5dbdb; }
+    .subscription-edit .btn-primary { background: #ff7200; color: white; }
+    .subscription-edit .btn-primary:hover { background: #e66500; }
+    .subscription-edit .success-screen { display: none; text-align: center; padding: 60px 30px; }
+    .subscription-edit .success-screen.active { display: block; }
+    .subscription-edit .recap-box { background: #f8f9fa; border-radius: var(--wizard-radius); padding: 20px; text-align: left; margin: 30px 0; }
+    .subscription-edit .recap-item { margin-bottom: 8px; font-size: 14px; color: #555; }
+    .subscription-edit .recap-item strong { color: #2c3e50; }
+    @media (max-width: 600px) { .subscription-edit .category-selection { grid-template-columns: 1fr; } .subscription-edit .form-row { grid-template-columns: 1fr; } .subscription-edit .housing-options, .subscription-edit .payment-options { grid-template-columns: 1fr; } }
+</style>
+@include('shared.subscription-wizard.sidebar-styles')
+
+<div class="subscription-edit">
+    <div class="wizard-page" id="wizardLayout">
+        <x-subscription-wizard-sidebar :dashboard-url="$dashboardUrl" />
+
+        <div class="wizard-main">
     <div class="header">
-        <div class="logo-display"><img src="{{ asset('LOGO.png') }}" alt="Logo" style="max-width: 200px; height: auto;"></div><br>
+        <x-org-logo class="max-w-[200px] h-auto mb-2" />
         <h2>Correction de souscription #{{ $souscription->id }}</h2>
         <p>Promoteur immobilier agréé</p>
         @if($souscription->statut === 'en_attente_correction')
@@ -78,6 +105,7 @@
         @endif
     </div>
 
+        <div class="wizard-content">
     <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width: 20%"></div></div>
     <div class="step-indicator" id="stepIndicator">1/5</div>
 
@@ -86,7 +114,7 @@
         @method('PUT')
 
         @if ($errors->any())
-            <div class="alert alert-danger" style="margin: 20px 30px; padding: 15px; border-radius: 6px; background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24;">
+            <div class="alert alert-danger" style="margin: 20px 30px; padding: 15px; border-radius: 6px; background-color: #ffedd5; border: 1px solid #fed7aa; color: #c2410c;">
                 <strong>Erreurs :</strong>
                 <ul>@foreach ($errors->all() as $error) <li>{{ $error }}</li> @endforeach</ul>
             </div>
@@ -135,7 +163,7 @@
             </div>
             <div class="mutuelle-select" id="mutuelleSelectWrapper" style="display:none; margin-top: 15px;">
                 <label>Mutuelle</label>
-                <select name="mutuelle_id" id="mutuelleSelect" disabled>
+                <select name="mutuelle_id" id="mutuelleSelect">
                     <option value="">-- Sélectionnez une mutuelle --</option>
                     @isset($mutuelles)
                         @php $mutuelleVal = old('mutuelle_id', $souscription->client->mutuelle_id ?? null); @endphp
@@ -199,6 +227,22 @@
                 <label>Salaire mensuel</label>
                 <input type="text" name="salary" required value="{{ old('salary', $souscription->salaire_mensuel) }}" oninput="formatInputMontant(this)">
             </div>
+            @php
+                $vProf = old('profession', $souscription->profession ?? $c?->profession ?? '');
+                $vEnt = old('entreprise', $souscription->entreprise ?? $c?->entreprise ?? '');
+                $vRes = old('lieu_residence', $souscription->lieu_residence ?? $c?->lieu_residence ?? '');
+                $vVille = old('ville', $souscription->ville ?? $c?->ville ?? '');
+                $vPays = old('pays', $souscription->pays ?? $c?->pays ?? '');
+            @endphp
+            <div class="form-row">
+                <div class="form-group"><label>Profession</label><input type="text" name="profession" value="{{ $vProf }}"></div>
+                <div class="form-group"><label>Nom de l'entreprise</label><input type="text" name="entreprise" value="{{ $vEnt }}"></div>
+            </div>
+            <div class="form-group"><label>Lieu de résidence actuel</label><input type="text" name="lieu_residence" value="{{ $vRes }}"></div>
+            <div class="form-row">
+                <div class="form-group"><label>Ville</label><input type="text" name="ville" value="{{ $vVille }}"></div>
+                <div class="form-group"><label>Pays</label><input type="text" name="pays" value="{{ $vPays }}"></div>
+            </div>
             <div class="form-group">
                 <label>Situation matrimoniale:</label>
                 @php $sitVal = old('maritalStatus', $souscription->situation_matrimoniale); @endphp
@@ -235,6 +279,16 @@
                 </div>
             </div>
             <div class="form-group"><label>Numéro Pièce</label><input type="text" name="idNumber" required value="{{ old('idNumber', $souscription->numero_piece) }}"></div>
+            @php
+                $dDel = $souscription->date_delivrance_piece ?? $c?->date_delivrance_piece ?? null;
+                $dExp = $souscription->date_expiration_piece ?? $c?->date_expiration_piece ?? null;
+                $vDd = old('date_delivrance_piece', $dDel ? $dDel->format('Y-m-d') : '');
+                $vDe = old('date_expiration_piece', $dExp ? $dExp->format('Y-m-d') : '');
+            @endphp
+            <div class="form-row">
+                <div class="form-group"><label>Date de délivrance de la pièce</label><input type="date" name="date_delivrance_piece" value="{{ $vDd }}"></div>
+                <div class="form-group"><label>Date d'expiration de la pièce</label><input type="date" name="date_expiration_piece" value="{{ $vDe }}"></div>
+            </div>
             <div class="form-group">
                 <label>Fichier Pièce</label>
                 @if($souscription->fichier_piece)<div class="mb-2 small text-success">Fichier existant: <a href="{{ Storage::url($souscription->fichier_piece) }}" target="_blank">Voir</a></div>@endif
@@ -272,7 +326,7 @@
                 <input type="hidden" name="paymentMode" id="paymentMode" required value="{{ old('paymentMode', $souscription->mode_paiement) }}">
             </div>
             <div class="summary-box">
-                <h4>💰 Valeur: <span id="valeurSouscription">-</span> FCFA</h4>
+                <h4 class="flex items-center gap-2"><x-icon name="banknotes" class="h-5 w-5 shrink-0" /> Valeur: <span id="valeurSouscription">-</span> FCFA</h4>
                 <div class="summary-line"><span>Apport (<span id="pourcentageApport">-</span>%)</span><strong><span id="apportInitial">-</span> FCFA</strong></div>
             </div>
             <div class="warning-box">Frais: <span id="fraisSouscription">-</span> FCFA</div>
@@ -297,6 +351,10 @@
             <div class="buttons"><button type="button" class="btn-secondary" onclick="prevStep()">Retour</button><button type="submit" class="btn-primary">Mettre à jour</button></div>
         </div>
     </form>
+
+        </div>{{-- .wizard-content --}}
+        </div>{{-- .wizard-main --}}
+    </div>{{-- .wizard-page --}}
 </div>
 
 <script type="application/json" id="biensImmobiliersData">@php echo json_encode($biensImmobiliers); @endphp</script>
@@ -312,6 +370,13 @@
         document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
         document.getElementById('step' + n).classList.add('active');
         updateProgress();
+        if (typeof updateWizardSidebar === 'function') {
+            updateWizardSidebar();
+        }
+    }
+    function goToStep(n) {
+        currentStep = n;
+        showStep(currentStep);
     }
     function selectCategory(el, v) {
         document.querySelectorAll('.category-card').forEach(c => c.classList.remove('selected'));
@@ -461,6 +526,7 @@
     }
     function updateFileName(i) { document.getElementById('fileName').textContent = i.files[0]?.name || ''; }
     document.addEventListener('DOMContentLoaded', () => {
+        initWizardSidebarNav();
         const cat = document.getElementById('clientCategory').value;
         if(cat) document.querySelectorAll('.category-card').forEach(c => { if(c.innerText.includes(cat)) c.classList.add('selected'); });
         toggleOrganisationFields();
@@ -526,4 +592,5 @@
         }
     }
 </script>
+@include('shared.subscription-wizard.sidebar-script')
 @endsection

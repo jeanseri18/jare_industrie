@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,7 +10,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Client extends Model
 {
+    use BelongsToOrganization;
+
     protected $fillable = [
+        'organization_id',
         'ref_client',
         'nom',
         'prenom',
@@ -29,13 +33,22 @@ class Client extends Model
         'nature_piece',
         'numero_piece',
         'fichier_piece',
-        'mutuelle_id'
+        'mutuelle_id',
+        'profession',
+        'entreprise',
+        'lieu_residence',
+        'ville',
+        'pays',
+        'date_delivrance_piece',
+        'date_expiration_piece',
     ];
 
     protected $casts = [
         'date_naissance' => 'date',
         'nombre_enfants' => 'integer',
-        'salaire_mensuel' => 'integer'
+        'salaire_mensuel' => 'integer',
+        'date_delivrance_piece' => 'date',
+        'date_expiration_piece' => 'date',
     ];
 
     public function mutuelle(): BelongsTo

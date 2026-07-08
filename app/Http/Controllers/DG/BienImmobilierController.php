@@ -3,29 +3,44 @@
 namespace App\Http\Controllers\DG;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\BienImmobilier;
 use App\Models\Projet;
-use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 
 class BienImmobilierController extends Controller
 {
     public function index(Projet $projet)
     {
+        if ($projet->projetLots()->doesntExist()) {
+            return redirect()->route('dg.projets.index')
+                ->with('error', 'Créez d’abord au moins un lot pour ce projet (menu « Îlots & lots ») avant d’accéder aux biens.');
+        }
+
         $biens = $projet->bien_immobiliers()
             ->latest()
-            ->paginate(10);
+            ->paginate(config('pagination.per_page'))->withQueryString();
             
         return view('dg.projets.biens.index', compact('projet', 'biens'));
     }
 
     public function create(Projet $projet)
     {
+        if ($projet->projetLots()->doesntExist()) {
+            return redirect()->route('dg.projets.index')
+                ->with('error', 'Créez d’abord au moins un lot pour ce projet (menu « Îlots & lots ») avant d’ajouter des biens.');
+        }
+
         return view('dg.projets.biens.create', compact('projet'));
     }
 
     public function store(Request $request, Projet $projet)
     {
+        if ($projet->projetLots()->doesntExist()) {
+            return redirect()->route('dg.projets.index')
+                ->with('error', 'Créez d’abord au moins un lot pour ce projet avant d’ajouter des biens.');
+        }
+
         $request->validate([
             'titre' => 'required|string|max:150',
             'type' => 'required|in:duplex,appartement,villa,terrain,etage,villa basse,villa +R1,autre',
@@ -60,10 +75,12 @@ class BienImmobilierController extends Controller
             'wc_visiteur_carrele' => 'boolean',
             'grande_cuisine_carrelee' => 'boolean',
             'buanderie' => 'boolean',
-            'installation_chauffe_eau' => 'boolean'
+            'installation_chauffe_eau' => 'boolean',
+            'ilot' => 'nullable|string|max:50',
         ]);
 
         $data = $request->all();
+        unset($data['ilot']);
         $typeMap = [
             'villa' => 'villa basse',
             'Villa' => 'villa basse',
@@ -91,8 +108,26 @@ class BienImmobilierController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
-        return redirect()->route('dg.projets.biens.index', $projet)
-            ->with('success', 'Bien immobilier créé avec succès');
+        $url = route('dg.projets.biens.apres_creation', [$projet, $bien]);
+        if ($request->filled('ilot')) {
+            $url .= '?ilot='.urlencode((string) $request->input('ilot'));
+        }
+
+        return redirect($url);
+    }
+
+    /**
+     * Après création d’un bien : liste des biens, autre bien, ou retour îlots / lots.
+     */
+    public function apresCreation(Projet $projet, BienImmobilier $bien, Request $request)
+    {
+        if ((int) $bien->idprojet !== (int) $projet->id) {
+            abort(404);
+        }
+
+        $ilot = $request->query('ilot');
+
+        return view('dg.projets.biens.apres_creation', compact('projet', 'bien', 'ilot'));
     }
 
     public function edit(BienImmobilier $bien)

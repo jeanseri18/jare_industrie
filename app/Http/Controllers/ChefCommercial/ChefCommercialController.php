@@ -11,9 +11,13 @@ use App\Models\Mutuelle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Concerns\SyncsIdentityExtensions;
+use App\Services\ReferenceGenerator;
 
 class ChefCommercialController extends Controller
 {
+    use SyncsIdentityExtensions;
+
     public function __construct()
     {
         $this->middleware('auth');
@@ -43,8 +47,8 @@ class ChefCommercialController extends Controller
     public function store(Request $request)
     {
         // Nettoyer les montants (supprimer les espaces)
-        $cleanAmount = function($value) {
-            return str_replace(' ', '', $value);
+        $cleanAmount = function ($value) {
+            return str_replace(' ', '', (string) ($value ?? ''));
         };
 
         $request->merge([
@@ -87,6 +91,13 @@ class ChefCommercialController extends Controller
             'apport_initial' => 'required|numeric|min:0',
             'apport_initial_paye_par_client' => 'nullable|boolean',
             'frais_souscription' => 'required|numeric|min:0',
+            'profession' => 'nullable|string|max:255',
+            'entreprise' => 'nullable|string|max:255',
+            'lieu_residence' => 'nullable|string|max:255',
+            'ville' => 'nullable|string|max:120',
+            'pays' => 'nullable|string|max:120',
+            'date_delivrance_piece' => 'nullable|date',
+            'date_expiration_piece' => 'nullable|date',
         ]);
 
         // Mapper les valeurs
@@ -144,10 +155,7 @@ class ChefCommercialController extends Controller
             $client->categorie_client = $categorieClient;
             $client->mutuelle_id = $categorieClient === 'mutuelle' ? $request->mutuelle_id : null;
 
-            // Générer la référence client
-            $lastClient = Client::orderBy('id', 'desc')->first();
-            $nextNumber = $lastClient ? $lastClient->id + 1 : 1;
-            $client->ref_client = 'CLI-' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+            $client->ref_client = ReferenceGenerator::nextClientRef();
             
             $client->save();
         }
@@ -161,6 +169,7 @@ class ChefCommercialController extends Controller
             $client->save();
         }
         
+        $this->applyIdentityExtensionsToClient($client, $request);
         $client->categorie_client = $categorieClient;
         $client->mutuelle_id = $categorieClient === 'mutuelle' ? $request->mutuelle_id : null;
         $client->save();
@@ -236,11 +245,9 @@ class ChefCommercialController extends Controller
         $souscription->apport_initial = $apportPaye ? $apportInitialCalc : 0;
         $souscription->frais_souscription = $fraisSouscription;
         $souscription->statut = 'en_attente';
-        
-        // Référence souscription
-        $lastSouscription = Souscription::orderBy('id', 'desc')->first();
-        $nextNumber = $lastSouscription ? $lastSouscription->id + 1 : 1;
-        $souscription->ref_souscription = 'SOUS-' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+        $this->applyIdentityExtensionsToSouscription($souscription, $request);
+
+        $souscription->ref_souscription = ReferenceGenerator::nextSouscriptionRef();
         
         $souscription->save();
 
@@ -249,10 +256,12 @@ class ChefCommercialController extends Controller
 
         $ficheUrl = route('chef_commercial.souscriptions.fiche-souscription', $souscription);
         $sendUrl = route('chef_commercial.souscriptions.fiche-souscription.send', $souscription);
+        $contratUrl = \Illuminate\Support\Facades\URL::signedRoute('public.souscriptions.contrat-reservation', ['souscription' => $souscription->id]);
         return redirect()->route('chef_commercial.souscriptions.create')
             ->with('success', 'Souscription créée avec succès et soumise pour validation.')
             ->with('fiche_souscription_url', $ficheUrl)
-            ->with('fiche_souscription_send_url', $sendUrl);
+            ->with('fiche_souscription_send_url', $sendUrl)
+            ->with('contrat_reservation_url', $contratUrl);
     }
 
     /**
@@ -290,7 +299,7 @@ class ChefCommercialController extends Controller
 
         $this->applySouscriptionFilters($request, $correctionsQuery);
 
-        $correctionsRecentes = $correctionsQuery->paginate(10)->withQueryString();
+        $correctionsRecentes = $correctionsQuery->paginate(config('pagination.per_page'))->withQueryString();
         
         return view('chef_commercial.dashboard', compact(
             'souscriptionsCorrigees', 
@@ -378,7 +387,7 @@ class ChefCommercialController extends Controller
 
         $this->applySouscriptionFilters($request, $tableQuery);
 
-        $souscriptionsACorriger = $tableQuery->paginate(20)->withQueryString();
+        $souscriptionsACorriger = $tableQuery->paginate(config('pagination.per_page'))->withQueryString();
         
         return view('chef_commercial.souscriptions.corrigees', compact(
             'souscriptionsACorriger', 
@@ -406,7 +415,7 @@ class ChefCommercialController extends Controller
 
         $this->applySouscriptionFilters($request, $tableQuery);
 
-        $souscriptionsCorrigees = $tableQuery->paginate(20)->withQueryString();
+        $souscriptionsCorrigees = $tableQuery->paginate(config('pagination.per_page'))->withQueryString();
 
         return view('chef_commercial.souscriptions.corrige', compact(
             'souscriptionsCorrigees',
@@ -501,8 +510,8 @@ class ChefCommercialController extends Controller
     public function update(Request $request, \App\Models\Souscription $souscription)
     {
         // Nettoyer les montants (supprimer les espaces)
-        $cleanAmount = function($value) {
-            return str_replace(' ', '', $value);
+        $cleanAmount = function ($value) {
+            return str_replace(' ', '', (string) ($value ?? ''));
         };
 
         $request->merge([
@@ -545,6 +554,13 @@ class ChefCommercialController extends Controller
             'apport_initial' => 'required|numeric|min:0',
             'apport_initial_paye_par_client' => 'nullable|boolean',
             'frais_souscription' => 'required|numeric|min:0',
+            'profession' => 'nullable|string|max:255',
+            'entreprise' => 'nullable|string|max:255',
+            'lieu_residence' => 'nullable|string|max:255',
+            'ville' => 'nullable|string|max:120',
+            'pays' => 'nullable|string|max:120',
+            'date_delivrance_piece' => 'nullable|date',
+            'date_expiration_piece' => 'nullable|date',
         ]);
 
         $situationMatrimonialeMap = [
@@ -599,6 +615,7 @@ class ChefCommercialController extends Controller
         $client->numero_piece = $request->idNumber;
         $client->categorie_client = $categorieClient;
         $client->mutuelle_id = $categorieClient === 'mutuelle' ? $request->mutuelle_id : null;
+        $this->applyIdentityExtensionsToClient($client, $request);
 
         // Gestion du fichier d'identification
         $path = null;
@@ -637,6 +654,7 @@ class ChefCommercialController extends Controller
         $souscription->nature_piece = $naturePieceMap[$request->idType] ?? $souscription->nature_piece;
         $souscription->numero_piece = $request->idNumber;
         if ($path) { $souscription->fichier_piece = $path; }
+        $this->applyIdentityExtensionsToSouscription($souscription, $request);
         $souscription->programme = $request->program;
         $souscription->date_debut = $request->startDate;
         $souscription->date_fin = $request->endDate;

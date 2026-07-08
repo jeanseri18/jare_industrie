@@ -32,7 +32,7 @@ class HistoryController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $activities = $query->latest()->paginate(20);
+        $activities = $query->latest()->paginate(config('pagination.per_page'))->withQueryString();
         $users = User::where('role', '!=', 'client')->get();
 
         return view('admin.history.index', compact('activities', 'users'));

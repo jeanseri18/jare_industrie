@@ -5,11 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\ActivityLog;
-use App\Models\DatabaseBackup;
 use App\Models\Client;
 use App\Models\Projet;
 use App\Models\Souscription;
 use App\Models\Paiement;
+use App\Services\DashboardChartService;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -23,20 +23,12 @@ class DashboardController extends Controller
             'total_projets' => Projet::count(),
             'total_souscriptions' => Souscription::count(),
             'total_paiements' => Paiement::sum('montant'),
-            'lastBackup' => DatabaseBackup::completed()->latest()->first(),
         ];
 
         // Activités récentes
         $recentActivities = ActivityLog::with('user')
             ->latest()
             ->limit(10)
-            ->get();
-
-        // Sauvegardes récentes
-        $recentBackups = DatabaseBackup::with('user')
-            ->completed()
-            ->latest()
-            ->limit(5)
             ->get();
 
         // Utilisateurs par rôle
@@ -71,13 +63,29 @@ class DashboardController extends Controller
         // Alertes et notifications
         $alerts = $this->getAlerts();
 
+        $charts = app(DashboardChartService::class);
+        $roleChart = $charts->usersByRoleDonut($usersByRole);
+        $activityTrend = $charts->monthlyActivityTrend();
+
+        $chartDonut = array_merge(['title' => 'Utilisateurs par rôle'], $roleChart);
+        $chartLine = array_merge(['title' => 'Évolution mensuelle'], $activityTrend);
+        $chartBar = [
+            'title' => 'Nouveaux utilisateurs',
+            'labels' => $activityTrend['labels'],
+            'values' => $activityTrend['datasets'][0]['values'] ?? [],
+            'chartLabel' => 'Utilisateurs',
+            'currency' => false,
+        ];
+
         return view('admin.dashboard', compact(
             'stats',
             'recentActivities',
-            'recentBackups',
             'usersByRole',
             'monthlyStats',
-            'alerts'
+            'alerts',
+            'chartDonut',
+            'chartLine',
+            'chartBar'
         ));
     }
 
@@ -119,17 +127,6 @@ class DashboardController extends Controller
     private function getAlerts()
     {
         $alerts = [];
-
-        // Vérifier la dernière sauvegarde
-        $lastBackup = DatabaseBackup::completed()->latest()->first();
-        if (!$lastBackup || $lastBackup->created_at < now()->subDays(7)) {
-            $alerts[] = [
-                'type' => 'warning',
-                'message' => 'Aucune sauvegarde récente trouvée. La dernière sauvegarde date de ' . 
-                    ($lastBackup ? $lastBackup->created_at->diffForHumans() : 'jamais'),
-                'icon' => 'fas fa-exclamation-triangle',
-            ];
-        }
 
         // Vérifier l'espace disque (si possible)
         $diskSpace = disk_free_space(storage_path());

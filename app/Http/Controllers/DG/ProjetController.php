@@ -14,8 +14,9 @@ class ProjetController extends Controller
     public function index()
     {
         $projets = Projet::with('creePar')
+            ->withCount(['projetLots', 'bien_immobiliers'])
             ->latest()
-            ->paginate(10);
+            ->paginate(config('pagination.per_page'))->withQueryString();
             
         return view('dg.projets.index', compact('projets'));
     }
@@ -31,7 +32,10 @@ class ProjetController extends Controller
         $request->validate([
             'nom' => 'required|string|max:150',
             'numero_agrement' => 'nullable|string|max:100',
+            'date_agrement' => 'nullable|date',
             'localisation' => 'nullable|string|max:255',
+            'titre_foncier' => 'nullable|string|max:150',
+            'circonscription_fonciere' => 'nullable|string|max:150',
             'superficie' => 'nullable|numeric|min:0',
             'nb_logements' => 'nullable|integer|min:0',
             'est_actif' => 'boolean',
@@ -54,8 +58,15 @@ class ProjetController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
-        return redirect()->route('dg.projets.index')
-            ->with('success', 'Projet créé avec succès');
+        return redirect()->route('dg.projets.apres_creation', $projet);
+    }
+
+    /**
+     * Proposition après création : saisir les lots ou revenir à la liste.
+     */
+    public function apresCreation(Projet $projet)
+    {
+        return view('dg.projets.apres_creation', compact('projet'));
     }
 
     public function edit(Projet $projet)
@@ -69,7 +80,10 @@ class ProjetController extends Controller
         $request->validate([
             'nom' => 'required|string|max:150',
             'numero_agrement' => 'nullable|string|max:100',
+            'date_agrement' => 'nullable|date',
             'localisation' => 'nullable|string|max:255',
+            'titre_foncier' => 'nullable|string|max:150',
+            'circonscription_fonciere' => 'nullable|string|max:150',
             'superficie' => 'nullable|numeric|min:0',
             'nb_logements' => 'nullable|integer|min:0',
             'est_actif' => 'boolean',

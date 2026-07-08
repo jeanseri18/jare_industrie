@@ -29,7 +29,7 @@ class UserController extends Controller
             $query->where('role', $request->role);
         }
 
-        $users = $query->latest()->paginate(10)->withQueryString();
+        $users = $query->latest()->paginate(config('pagination.per_page'))->withQueryString();
 
         $roles = ['admin_technique', 'dg', 'comptable', 'chef_commercial', 'operateur', 'client'];
             

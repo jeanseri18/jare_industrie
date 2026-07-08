@@ -10,9 +10,14 @@ use App\Models\Projet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use App\Http\Controllers\Concerns\SyncsIdentityExtensions;
+use App\Services\ReferenceGenerator;
+use App\Support\CurrentOrganization;
 
 class OperateurController extends Controller
 {
+    use SyncsIdentityExtensions;
+
     public function __construct()
     {
         $this->middleware('auth');
@@ -132,8 +137,8 @@ class OperateurController extends Controller
     public function store(Request $request)
     {
         // Nettoyer les montants (supprimer les espaces)
-        $cleanAmount = function($value) {
-            return str_replace(' ', '', $value);
+        $cleanAmount = function ($value) {
+            return str_replace(' ', '', (string) ($value ?? ''));
         };
 
         $request->merge([
@@ -176,6 +181,13 @@ class OperateurController extends Controller
             'apport_initial' => 'required|numeric|min:0',
             'apport_initial_paye_par_client' => 'nullable|boolean',
             'frais_souscription' => 'required|numeric|min:0',
+            'profession' => 'nullable|string|max:255',
+            'entreprise' => 'nullable|string|max:255',
+            'lieu_residence' => 'nullable|string|max:255',
+            'ville' => 'nullable|string|max:120',
+            'pays' => 'nullable|string|max:120',
+            'date_delivrance_piece' => 'nullable|date',
+            'date_expiration_piece' => 'nullable|date',
         ]);
 
         // Mapper les valeurs de situation matrimoniale
@@ -209,10 +221,7 @@ class OperateurController extends Controller
         }
         $categorieClient = $categorieClientMap[$effectiveCategory] ?? 'individuel';
 
-        // Générer la référence client d'abord pour l'utiliser si besoin
-        $lastClient = Client::orderBy('id', 'desc')->first();
-        $nextNumber = $lastClient ? $lastClient->id + 1 : 1;
-        $refClient = 'CLI-' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+        $refClient = ReferenceGenerator::nextClientRef();
 
         // Vérifier si le client existe déjà par email ou numéro de pièce
         $client = null;
@@ -293,6 +302,7 @@ class OperateurController extends Controller
             $client->save();
         }
         
+        $this->applyIdentityExtensionsToClient($client, $request);
         $client->categorie_client = $categorieClient;
         $client->mutuelle_id = $categorieClient === 'mutuelle' ? $request->mutuelle_id : null;
         $client->save();
@@ -371,11 +381,9 @@ class OperateurController extends Controller
         $souscription->apport_initial = $apportPaye ? $apportInitialCalc : 0;
         $souscription->frais_souscription = $fraisSouscription;
         $souscription->statut = 'en_attente';
-        
-        // Générer la référence souscription
-        $lastSouscription = Souscription::orderBy('id', 'desc')->first();
-        $nextNumber = $lastSouscription ? $lastSouscription->id + 1 : 1;
-        $souscription->ref_souscription = 'SOUS-' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+        $this->applyIdentityExtensionsToSouscription($souscription, $request);
+
+        $souscription->ref_souscription = ReferenceGenerator::nextSouscriptionRef();
         
         $souscription->save();
 
@@ -384,10 +392,12 @@ class OperateurController extends Controller
 
         $ficheUrl = route('operateur.souscriptions.fiche-souscription', $souscription);
         $sendUrl = route('operateur.souscriptions.fiche-souscription.send', $souscription);
+        $contratUrl = \Illuminate\Support\Facades\URL::signedRoute('public.souscriptions.contrat-reservation', ['souscription' => $souscription->id]);
         return redirect()->route('operateur.souscriptions.create')
             ->with('success', 'Souscription créée avec succès et soumise pour validation.')
             ->with('fiche_souscription_url', $ficheUrl)
-            ->with('fiche_souscription_send_url', $sendUrl);
+            ->with('fiche_souscription_send_url', $sendUrl)
+            ->with('contrat_reservation_url', $contratUrl);
     }
 
     /**

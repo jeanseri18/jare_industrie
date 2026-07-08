@@ -14,17 +14,21 @@ class AttributionLot extends Model
     protected $fillable = [
         'idProjet',
         'id_souscription',
+        'projet_lot_id',
         'type_logement',
         'numero_page_guide',
         'lot',
         'ilot',
         'numero_villa',
         'superficie',
+        'surface_batie',
         'observations_internes'
     ];
 
     protected $casts = [
-        'observations_internes' => 'string'
+        'observations_internes' => 'string',
+        'superficie' => 'decimal:2',
+        'surface_batie' => 'decimal:2',
     ];
 
     public function projet()
@@ -35,5 +39,10 @@ class AttributionLot extends Model
     public function souscription()
     {
         return $this->belongsTo(Souscription::class, 'id_souscription');
+    }
+
+    public function projetLot()
+    {
+        return $this->belongsTo(ProjetLot::class, 'projet_lot_id');
     }
 }

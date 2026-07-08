@@ -287,7 +287,7 @@
 
         .progress-green { background: #10b981; }
         .progress-orange { background: #f59e0b; }
-        .progress-red { background: #ef4444; }
+        .progress-red { background: #ff7200; }
 
         .progress-text {
             font-weight: 600;
@@ -299,7 +299,7 @@
         }
 
         .evolution-positive { color: #10b981; }
-        .evolution-negative { color: #ef4444; }
+        .evolution-negative { color: #ff7200; }
 
         @media (max-width: 768px) {
             .sidebar {
@@ -321,13 +321,13 @@
     <div class="sidebar">
         <div class="logo-container">
             <svg width="120" height="60" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg">
-                <rect x="30" y="15" width="12" height="30" fill="#dc2626" rx="2"/>
-                <rect x="45" y="10" width="12" height="35" fill="#dc2626" rx="2"/>
-                <rect x="60" y="20" width="12" height="25" fill="#dc2626" rx="2"/>
-                <rect x="75" y="12" width="12" height="33" fill="#dc2626" rx="2"/>
+                <rect x="30" y="15" width="12" height="30" fill="#ff7200" rx="2"/>
+                <rect x="45" y="10" width="12" height="35" fill="#ff7200" rx="2"/>
+                <rect x="60" y="20" width="12" height="25" fill="#ff7200" rx="2"/>
+                <rect x="75" y="12" width="12" height="33" fill="#ff7200" rx="2"/>
                 <text x="60" y="55" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#003d82" text-anchor="middle">JARE</text>
             </svg>
-            <div style="font-size: 10px; color: #dc2626; margin-top: 5px;">PROMOTEUR IMMOBILIER AGREE</div>
+            <div style="font-size: 10px; color: #ff7200; margin-top: 5px;">PROMOTEUR IMMOBILIER AGREE</div>
         </div>
 
         <ul class="nav-menu">
